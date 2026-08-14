@@ -1,0 +1,184 @@
+[
+  {
+    "id": 1,
+    "titulo": "Eixo I – Mapeamento Territorial",
+    "subtitulo": "Pesquisa de campo, cartografia afetiva, reconhecimento de artistas, espaços e memórias.",
+    "cargaHoraria": "20 horas",
+    "cor": "#0D5BA8",
+    "icone": "MapPin",
+    "descricao": "Neste eixo inicial, os participantes desenvolvem o olhar etnográfico e investigativo sobre as dinâmicas sociais, históricas e culturais de suas ruas e bairros.",
+    "objetivos": [
+      "Identificar agentes culturais, coletivos e lideranças comunitárias.",
+      "Construir cartografias afetivas e mapas colaborativos georreferenciados.",
+      "Estruturar banco de dados local com relatos e fichas de catalogação."
+    ],
+    "missoes": [
+      {
+        "id": "m-101",
+        "eixoId": 1,
+        "numero": 1,
+        "titulo": "Reconhecendo o Território",
+        "descricaoCurta": "Caminhada de reconhecimento fotográfico registrando 10 marcos culturais e pontos de convivência.",
+        "descricaoCompleta": "Faça um trajeto a pé pelo seu bairro observando o que geralmente passa despercebido: comércios tradicionais, feiras, praças, grafites, placas artesanais e pontos de encontro comunitário. Fotografe 10 detalhes ou panorâmicas e anote suas impressões.",
+        "status": "em_andamento",
+        "duracaoHoras": 6,
+        "prazo": "Até 25 de Agosto",
+        "entregasRequeridas": "Upload de 5 a 10 fotografias acompanhadas de texto descritivo e localização.",
+        "exercicioAtivo": true,
+        "arquivosExemplo": [
+          { "titulo": "Guia de Cartografia Afetiva.pdf", "tipo": "PDF", "url": "#" },
+          { "titulo": "Exemplo de Roteiro de Caminhada.pdf", "tipo": "PDF", "url": "#" }
+        ],
+        "criteriosAvaliacao": [
+          "Relevância dos pontos registrados para a memória local",
+          "Composição visual e enquadramento",
+          "Riqueza das anotações e contexto coletado"
+        ]
+      },
+      {
+        "id": "m-102",
+        "eixoId": 1,
+        "numero": 2,
+        "titulo": "Cartografia Afetiva",
+        "descricaoCurta": "Desenho do mapa sensorial e rotas afetivas dos moradores mais antigos.",
+        "descricaoCompleta": "Converse com um morador antigo e mapeie os locais que já existiram ou que carregam histórias marcantes: fontes de água, primeiras casas, árvores centenárias e festas comunitárias.",
+        "status": "bloqueado",
+        "duracaoHoras": 7,
+        "entregasRequeridas": "Mapa ilustrado ou digitalizado com legenda e relato gravado em áudio ou texto.",
+        "exercicioAtivo": false
+      },
+      {
+        "id": "m-103",
+        "eixoId": 1,
+        "numero": 3,
+        "titulo": "Quem Faz o Território",
+        "descricaoCurta": "Entrevista e catalogação do primeiro artista ou mestre do saber local para o mapa.",
+        "descricaoCompleta": "Realize uma pré-entrevista com um artista, mestre de tradição oral ou artesão da sua região, preenchendo a ficha oficial de cadastro de talentos.",
+        "status": "bloqueado",
+        "duracaoHoras": 7,
+        "entregasRequeridas": "Ficha de cadastro completa + retrato do artista no seu local de trabalho.",
+        "exercicioAtivo": false
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "titulo": "Eixo II – Fotografia e Audiovisual",
+    "subtitulo": "Registro documental, narrativa visual, técnica de entrevista e produção com celular.",
+    "cargaHoraria": "14 horas",
+    "cor": "#00A7B5",
+    "icone": "Camera",
+    "descricao": "Capacitação prática em enquadramento, iluminação natural, gravação de áudio limpo com smartphone e edição ágil para redes e arquivo histórico.",
+    "objetivos": [
+      "Dominar as técnicas essenciais de fotografia com dispositivos móveis.",
+      "Conduzir mini documentários e entrevistas em vídeo de impacto.",
+      "Criar ensaios fotográficos temáticos sobre trabalho, fé e cultura."
+    ],
+    "missoes": [
+      {
+        "id": "m-201",
+        "eixoId": 2,
+        "numero": 1,
+        "titulo": "Retratos da Comunidade",
+        "descricaoCurta": "Ensaio fotográfico de 3 personagens fundamentais da vida comunitária.",
+        "descricaoCompleta": "Produza três retratos humanizados aplicando regras de composição (regra dos terços, luz suave da manhã/tarde e foco no olhar).",
+        "status": "bloqueado",
+        "duracaoHoras": 5,
+        "entregasRequeridas": "3 fotos em alta resolução com minibiografia de cada personagem.",
+        "exercicioAtivo": false
+      },
+      {
+        "id": "m-202",
+        "eixoId": 2,
+        "numero": 2,
+        "titulo": "Mini Documentário Mobile (1 min)",
+        "descricaoCurta": "Produção de vídeo vertical ou horizontal de 60 segundos com depoimento e imagens de cobertura.",
+        "descricaoCompleta": "Grave e edite um vídeo de 1 minuto apresentando uma iniciativa cultural do bairro, utilizando trilha livre de direitos e legendas.",
+        "status": "bloqueado",
+        "duracaoHoras": 9,
+        "entregasRequeridas": "Link de vídeo no YouTube/Vimeo ou arquivo mp4.",
+        "exercicioAtivo": false
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "titulo": "Eixo III – Comunicação Comunitária",
+    "subtitulo": "Produção de conteúdo, canais digitais, mobilização, difusão e rede intersetorial.",
+    "cargaHoraria": "10 horas",
+    "cor": "#FF8A00",
+    "icone": "Megaphone",
+    "descricao": "Estratégias para fazer a voz da comunidade circular nos canais digitais, murais físicos, rádios comunitárias e redes sociais.",
+    "objetivos": [
+      "Elaborar boletins e pautas informativas de interesse público.",
+      "Articular redes de contato com veículos de comunicação e órgãos locais.",
+      "Gerenciar canais de difusão comunitária com ética e engajamento."
+    ],
+    "missoes": [
+      {
+        "id": "m-301",
+        "eixoId": 3,
+        "numero": 1,
+        "titulo": "Pauta para a Rede",
+        "descricaoCurta": "Redação de uma pauta cultural e envio para o banco intersetorial da plataforma FotoCidade.",
+        "descricaoCompleta": "Escreva um release informativo sobre um evento, necessidade ou conquista do seu bairro para publicação na Vitrine e envio a parceiros.",
+        "status": "bloqueado",
+        "duracaoHoras": 4,
+        "entregasRequeridas": "Texto formatado com título, lide, depoimentos e dados de serviço.",
+        "exercicioAtivo": false
+      },
+      {
+        "id": "m-302",
+        "eixoId": 3,
+        "numero": 2,
+        "titulo": "Campanha de Mobilização Digital",
+        "descricaoCurta": "Criação de kit de cards e textos para WhatsApp e Instagram sobre evento comunitário.",
+        "descricaoCompleta": "Desenvolva peças gráficas simples e mensagens de texto para mobilizar vizinhos para a ocupação cultural da praça.",
+        "status": "bloqueado",
+        "duracaoHoras": 6,
+        "entregasRequeridas": "3 cards digitais e texto de disparo.",
+        "exercicioAtivo": false
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "titulo": "Eixo IV – Produção e Ocupação Cultural",
+    "subtitulo": "Curadoria, planejamento, produção, ocupação de espaços públicos e formação de plateia.",
+    "cargaHoraria": "12 horas",
+    "cor": "#FFC107",
+    "icone": "Tent",
+    "descricao": "Planejamento executivo e realização de intervenções artísticas, exposições de rua e mostras fotográficas abertas à população.",
+    "objetivos": [
+      "Elaborar cronogramas, orçamentos e fichas técnicas de produção.",
+      "Conectar artistas mapeados com palcos e praças da cidade.",
+      "Montar a Mostra Final FotoCidade no território."
+    ],
+    "missoes": [
+      {
+        "id": "m-401",
+        "eixoId": 4,
+        "numero": 1,
+        "titulo": "Plano de Ocupação de Espaço Público",
+        "descricaoCurta": "Elaboração da proposta de intervenção para a Mostra Fotográfica na Praça Central.",
+        "descricaoCompleta": "Defina o local, formato expositivo (varal fotográfico, projeção noturna ou painel), logística de som, público esperado e segurança.",
+        "status": "bloqueado",
+        "duracaoHoras": 6,
+        "entregasRequeridas": "Documento de plano de ação da ocupação.",
+        "exercicioAtivo": false
+      },
+      {
+        "id": "m-402",
+        "eixoId": 4,
+        "numero": 2,
+        "titulo": "Realização da Mostra Final FotoCidade",
+        "descricaoCurta": "Execução da mostra territorial com entrega de certificados aos alunos.",
+        "descricaoCompleta": "Participação ativa na montagem, recepção do público, mediação das obras e celebração com a comunidade.",
+        "status": "bloqueado",
+        "duracaoHoras": 6,
+        "entregasRequeridas": "Relatório final com fotos e lista de presença da comunidade.",
+        "exercicioAtivo": false
+      }
+    ]
+  }
+]

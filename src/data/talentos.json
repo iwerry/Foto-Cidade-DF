@@ -1,0 +1,54 @@
+[
+  {
+    "id": "tal-1",
+    "nome": "Ana Silva",
+    "funcao": "Pesquisadora Territorial & Fotógrafa",
+    "habilidades": ["Mapeamento Afetivo", "Fotografia Documental", "Entrevistas Orais"],
+    "bairro": "Fercal",
+    "bio": "Estudante e articuladora da Fercal, dedicada ao resgate de memórias orais e registro da vida cotidiana.",
+    "disponibilidade": "Disponível para projetos",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+    "whatsapp": "(61) 99877-1122",
+    "email": "ana.silva@fotocidade.org",
+    "verificado": true
+  },
+  {
+    "id": "tal-2",
+    "nome": "Lucas Carvalho",
+    "funcao": "Videomaker Mobile & Editor",
+    "habilidades": ["Vídeo com Celular", "CapCut / Premiere", "Cobertura de Eventos"],
+    "bairro": "Sobradinho I",
+    "bio": "Produz minidocs para redes sociais e coberturas ágeis para artistas independentes.",
+    "disponibilidade": "Disponível para projetos",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    "whatsapp": "(61) 99344-5566",
+    "email": "lucas.audiovisual@gmail.com",
+    "verificado": true
+  },
+  {
+    "id": "tal-3",
+    "nome": "Marcos Ribeiro",
+    "funcao": "Produtor Cultural & Articulador",
+    "habilidades": ["Gestão de Praças", "Captação Local", "Sonorização Básica"],
+    "bairro": "Sobradinho II",
+    "bio": "Atua na organização de saraus comunitários e conexão de artistas com escolas públicas.",
+    "disponibilidade": "Oficineiro",
+    "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+    "whatsapp": "(61) 99122-3344",
+    "email": "marcos.producao@gmail.com",
+    "verificado": true
+  },
+  {
+    "id": "tal-4",
+    "nome": "Juliana Santos",
+    "funcao": "Artista Visual & Grafiteira",
+    "habilidades": ["Muralismo", "Ilustração Digital", "Oficina de Lambe"],
+    "bairro": "Grande Colorado",
+    "bio": "Muralista com foco na fauna e flora do cerrado e identidade periférica.",
+    "disponibilidade": "Disponível para projetos",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    "whatsapp": "(61) 98833-2211",
+    "email": "juliana.arte@gmail.com",
+    "verificado": true
+  }
+]
