@@ -2,5 +2,5 @@
   "name": "FotoCidade",
   "description": "Plataforma e Trilha de Formação em Mapeamento Territorial, Produção Cultural e Comunicação Comunitária - Olhar • Registrar • Revelar Talentos",
   "requestFramePermissions": ["geolocation"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }
