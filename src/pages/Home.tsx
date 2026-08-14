@@ -1,7 +1,7 @@
 import React from 'react';
 import { MapPoint, VitrineItem, Artista } from '../types';
 import { ProjectCard } from '../components/cards/ProjectCard';
-import { MapPin, Camera, Tent, Sparkles, ArrowRight, BookOpen, Users, Compass, CheckCircle2, Play, Award } from 'lucide-react';
+import { MapPin, Camera, Tent, Sparkles, ArrowRight, Users, Compass, CheckCircle2 } from 'lucide-react';
 
 interface HomeProps {
   onNavigate: (tab: string) => void;
@@ -25,7 +25,7 @@ export const Home: React.FC<HomeProps> = ({
   return (
     <div className="space-y-16 pb-16 animate-in fade-in duration-300">
       
-      {/* HERO SECTION (Faithful to SitePreview.JPG) */}
+      {/* HERO SECTION */}
       <section className="relative overflow-hidden bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 lg:py-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -56,7 +56,7 @@ export const Home: React.FC<HomeProps> = ({
                 <button
                   id="btn-hero-subscribe"
                   onClick={onOpenInscription}
-                  className="px-8 py-4 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-heading font-bold text-sm sm:text-base rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/35 transition-all hover:scale-102 flex items-center justify-center gap-2"
+                  className="px-8 py-4 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-heading font-bold text-sm sm:text-base rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/35 transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-5 h-5 text-[#FFC107]" />
                   <span>Faça o Território Acontecer - Inscreva-se</span>
@@ -98,8 +98,8 @@ export const Home: React.FC<HomeProps> = ({
                 
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-slate-100">
                   <img
-                    src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1000&q=80"
-                    alt="Jovens comunicadores e fotógrafos no território"
+                    src="/oficina-olhar-fercal.jpg"
+                    alt="Jovens comunicadores e fotógrafos no território da Fercal e Sobradinho"
                     className="w-full h-[380px] sm:h-[420px] object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"></div>
@@ -242,7 +242,7 @@ export const Home: React.FC<HomeProps> = ({
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <button
                 onClick={() => onNavigate('mapa')}
-                className="px-6 py-3.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-heading font-bold text-xs sm:text-sm rounded-xl shadow-lg transition-all hover:scale-102 flex items-center gap-2"
+                className="px-6 py-3.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-heading font-bold text-xs sm:text-sm rounded-xl shadow-lg transition-all hover:scale-[1.02] flex items-center gap-2"
               >
                 <MapPin className="w-4 h-4 text-[#FFC107]" />
                 <span>Explorar Mapa Interativo</span>
@@ -274,7 +274,7 @@ export const Home: React.FC<HomeProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Eixo 1 */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-md transition-all border-t-4 border-t-[#0D5BA8]">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all border-t-4 border-t-[#0D5BA8]">
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0D5BA8] flex items-center justify-center font-bold font-heading mb-4">
               I
             </div>
@@ -288,7 +288,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* Eixo 2 */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-md transition-all border-t-4 border-t-[#00A7B5]">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all border-t-4 border-t-[#00A7B5]">
             <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#00A7B5] flex items-center justify-center font-bold font-heading mb-4">
               II
             </div>
@@ -302,7 +302,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* Eixo 3 */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-md transition-all border-t-4 border-t-[#FF8A00]">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all border-t-4 border-t-[#FF8A00]">
             <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#FF8A00] flex items-center justify-center font-bold font-heading mb-4">
               III
             </div>
@@ -316,7 +316,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* Eixo 4 */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-md transition-all border-t-4 border-t-[#FFC107]">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all border-t-4 border-t-[#FFC107]">
             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold font-heading mb-4">
               IV
             </div>

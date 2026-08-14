@@ -76,8 +76,8 @@ require_once ROOT_PATH . '/components/cards/artist_card.php';
                 <div class="lg:col-span-5 relative">
                     <div class="relative mx-auto max-w-md lg:max-w-none">
                         <div class="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 aspect-4/3">
-                            <img src="https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1000&q=80" 
-                                 alt="FotoCidade Mapeamento Territorial" 
+                            <img src="assets/images/oficina-olhar-fercal.jpg" 
+                                 alt="Oficina de Olhar Comunitário na Fercal - FotoCidade" 
                                  class="w-full h-full object-cover" />
                             <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
                             <div class="absolute bottom-6 left-6 right-6">

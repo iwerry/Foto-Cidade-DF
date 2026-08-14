@@ -6,7 +6,7 @@
 <div id="modal-point-detail" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs modal-container">
     <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in duration-200">
         <div class="h-48 bg-slate-200 relative">
-            <img id="detail-point-img" src="https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover" />
+            <img id="detail-point-img" src="assets/images/oficina-olhar-fercal.jpg" class="w-full h-full object-cover" />
             <button onclick="closeModal('modal-point-detail')" class="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md text-slate-700 hover:text-slate-900 rounded-full shadow-md">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
