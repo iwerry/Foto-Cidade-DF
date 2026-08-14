@@ -1,0 +1,74 @@
+[
+  {
+    "id": "parc-1",
+    "nome": "Centro de Ensino Médio 01 de Sobradinho",
+    "setor": "1º Setor (Poder Público)",
+    "tipo": "Escola",
+    "bairro": "Sobradinho I",
+    "descricao": "Ponto de formação e acolhimento dos laboratórios de mídia e mostras audiovisuais estudantis.",
+    "contribuicao": "Cessão de auditório, mobilização de estudantes e exibição dos mini documentários.",
+    "logo": "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=150&q=80",
+    "site": "http://cem01sobradinho.se.df.gov.br",
+    "contatoEmail": "contato@cem01sobradinho.edu.br"
+  },
+  {
+    "id": "parc-2",
+    "nome": "Administração Regional da Fercal",
+    "setor": "1º Setor (Poder Público)",
+    "tipo": "Órgão Público",
+    "bairro": "Fercal",
+    "descricao": "Apoio institucional e suporte logístico às caminhadas de mapeamento e ações em praças.",
+    "contribuicao": "Divulgação nos canais oficiais e apoio na infraestrutura das mostras públicas.",
+    "logo": "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=150&q=80",
+    "site": "http://fercal.df.gov.br",
+    "contatoEmail": "cultura@fercal.df.gov.br"
+  },
+  {
+    "id": "parc-3",
+    "nome": "Padaria & Café Pão da Serra",
+    "setor": "2º Setor (Empresas/Comércio)",
+    "tipo": "Empresa",
+    "bairro": "Sobradinho I",
+    "descricao": "Comércio tradicional com mais de 20 anos acolhendo artistas e patrocinador dos lanches das oficinas.",
+    "contribuicao": "Ponto de distribuição do fanzine FotoCidade e apoio com alimentação nas saídas de campo.",
+    "logo": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=150&q=80",
+    "site": "http://paodaserra.com.br",
+    "contatoEmail": "contato@paodaserra.com.br"
+  },
+  {
+    "id": "parc-4",
+    "nome": "Papelaria e Gráfica Express Colorado",
+    "setor": "2º Setor (Empresas/Comércio)",
+    "tipo": "Empresa",
+    "bairro": "Grande Colorado",
+    "descricao": "Parceiro gráfico que imprime os lambe-lambes, cartazes e fanzines com desconto social.",
+    "contribuicao": "Impressão de 500 exemplares do Mapa Afetivo para distribuição em feiras.",
+    "logo": "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=150&q=80",
+    "site": "http://graficacolorado.com.br",
+    "contatoEmail": "atendimento@graficacolorado.com.br"
+  },
+  {
+    "id": "parc-5",
+    "nome": "Instituto Flor do Cerrado - Ação Social",
+    "setor": "3º Setor (OSCs/Coletivos)",
+    "tipo": "ONG",
+    "bairro": "Fercal",
+    "descricao": "Organização comunitária que fomenta a agroecologia familiar, geração de renda e fortalecimento feminino.",
+    "contribuicao": "Articulação de 40 famílias para as oficinas de fotografia e registro oral.",
+    "logo": "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=150&q=80",
+    "site": "http://institutoflordocerrado.org.br",
+    "contatoEmail": "projetos@flordocerrado.org.br"
+  },
+  {
+    "id": "parc-6",
+    "nome": "Coletivo Cultural Raízes do Planalto",
+    "setor": "3º Setor (OSCs/Coletivos)",
+    "tipo": "Coletivo",
+    "bairro": "Sobradinho II",
+    "descricao": "Coletivo de produtores culturais independentes atuantes em música, audiovisual e teatro de rua.",
+    "contribuicao": "Mentoria prática para os alunos nos eixos de Produção e Ocupação Cultural.",
+    "logo": "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=150&q=80",
+    "site": "http://raizesdoplanalto.org",
+    "contatoEmail": "contato@raizesdoplanalto.org"
+  }
+]
