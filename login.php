@@ -52,8 +52,8 @@ require_once ROOT_PATH . '/components/common/logo.php';
     <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]"></div>
     
     <div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center space-y-4">
-        <div class="inline-block bg-white/95 p-4 rounded-3xl shadow-2xl backdrop-blur-md">
-            <?php render_logo('lg', true, 'index.php'); ?>
+        <div class="inline-block pb-2">
+            <?php render_logo('xl', true, 'index.php', '', 'white'); ?>
         </div>
         
         <h2 class="text-2xl font-black font-heading text-white tracking-tight">
