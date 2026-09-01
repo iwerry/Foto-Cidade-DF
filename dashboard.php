@@ -1816,6 +1816,22 @@ require_once ROOT_PATH . '/components/common/logo.php';
 </div>
 
 <script>
+function abrirModal(id) {
+    const m = document.getElementById(id);
+    if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+    }
+}
+
+function fecharModal(id) {
+    const m = document.getElementById(id);
+    if (m) {
+        m.classList.remove('flex');
+        m.classList.add('hidden');
+    }
+}
+
 const bancoBairrosPorCidade = {
     'Brasília/DF': [
         'Sobradinho', 'Sobradinho II', 'Fercal', 'Grande Colorado', 'Planaltina',
