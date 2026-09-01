@@ -9,6 +9,25 @@ $pageTitle = 'Mapa Cultural • Mapeamento Territorial do DF';
 
 $points = get_map_data();
 
+function getCategoryBadgeClass($cat) {
+    switch ($cat) {
+        case 'Hospital': return 'bg-rose-50 text-rose-700 border-rose-200';
+        case 'Espaço Cultural': return 'bg-orange-50 text-[#FF8A00] border-orange-200';
+        case 'Coletivo': return 'bg-teal-50 text-[#00A7B5] border-teal-200';
+        case 'Ponto de Memória': return 'bg-purple-50 text-purple-700 border-purple-200';
+        case 'Feira Cultural': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        case 'Órgão Público': return 'bg-blue-50 text-blue-700 border-blue-200';
+        case 'Escola': return 'bg-amber-50 text-amber-800 border-amber-200';
+        case 'Empresa': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+        case 'ONG': return 'bg-pink-50 text-pink-700 border-pink-200';
+        case 'Instituto': return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+        case 'Associação': return 'bg-sky-50 text-sky-700 border-sky-200';
+        case 'Turismo': return 'bg-yellow-50 text-yellow-800 border-yellow-200';
+        case 'Patrimônio':
+        default: return 'bg-blue-50 text-[#0D5BA8] border-blue-200';
+    }
+}
+
 require_once ROOT_PATH . '/components/common/head.php';
 require_once ROOT_PATH . '/components/common/navbar.php';
 ?>
@@ -16,6 +35,24 @@ require_once ROOT_PATH . '/components/common/navbar.php';
 <main class="flex-1 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
+        <?php if (isset($_GET['msg']) && $_GET['msg'] === 'excluido'): ?>
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                    <span>Ponto cultural removido com sucesso do banco de dados!</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">✕</button>
+            </div>
+        <?php elseif (isset($_GET['msg']) && $_GET['msg'] === 'sucesso'): ?>
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                    <span>Ponto cultural salvo com sucesso no mapa!</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">✕</button>
+            </div>
+        <?php endif; ?>
+
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -62,28 +99,63 @@ require_once ROOT_PATH . '/components/common/navbar.php';
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-3 space-y-2.5">
-                    <?php foreach ($points as $point): ?>
-                        <div onclick="openPointDetails('<?php echo htmlspecialchars($point['id']); ?>')"
-                             class="p-3 rounded-xl border border-slate-100 hover:border-[#0D5BA8] hover:bg-blue-50/50 transition-all cursor-pointer flex gap-3">
-                            <div class="w-14 h-14 rounded-lg bg-blue-50 text-[#0D5BA8] flex items-center justify-center shrink-0">
-                                <i data-lucide="map-pin" class="w-6 h-6"></i>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-1.5 mb-0.5">
-                                    <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-[#0D5BA8]">
-                                        <?php echo htmlspecialchars($point['categoria']); ?>
-                                    </span>
-                                    <span class="text-[10px] text-slate-500 truncate"><?php echo htmlspecialchars($point['regiaoAdministrativa'] ?? 'DF'); ?></span>
+                    <?php if (!empty($points)): ?>
+                        <?php foreach ($points as $point): ?>
+                            <div class="p-3 rounded-xl border border-slate-100 hover:border-[#0D5BA8] hover:bg-blue-50/50 transition-all flex items-center justify-between gap-3 group">
+                                <div onclick="openPointDetails('<?php echo htmlspecialchars($point['id']); ?>')" class="flex gap-3 flex-1 min-w-0 cursor-pointer">
+                                    <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
+                                        <img src="<?php echo htmlspecialchars(!empty($point['foto']) ? $point['foto'] : 'assets/images/oficina-olhar-fercal.jpg'); ?>" 
+                                             onerror="this.src='assets/images/oficina-olhar-fercal.jpg'" 
+                                             alt="<?php echo htmlspecialchars($point['nome']); ?>" 
+                                             class="w-full h-full object-cover" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1.5 mb-0.5">
+                                            <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border <?php echo getCategoryBadgeClass($point['categoria']); ?>">
+                                                <?php echo htmlspecialchars($point['categoria']); ?>
+                                            </span>
+                                            <span class="text-[10px] text-slate-500 truncate"><?php echo htmlspecialchars($point['regiaoAdministrativa'] ?? 'DF'); ?></span>
+                                        </div>
+                                        <h4 class="font-heading font-bold text-xs text-slate-900 leading-snug truncate">
+                                            <?php echo htmlspecialchars($point['nome']); ?>
+                                        </h4>
+                                        <p class="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
+                                            <?php echo htmlspecialchars($point['descricao']); ?>
+                                        </p>
+                                    </div>
                                 </div>
-                                <h4 class="font-heading font-bold text-xs text-slate-900 leading-snug truncate">
-                                    <?php echo htmlspecialchars($point['nome']); ?>
-                                </h4>
-                                <p class="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
-                                    <?php echo htmlspecialchars($point['descricao']); ?>
-                                </p>
+
+                                <?php if (function_exists('is_admin') && is_admin()): ?>
+                                    <div class="shrink-0 pl-1">
+                                        <form method="POST" action="dashboard.php" onsubmit="return confirm('Deseja excluir este ponto (<?php echo addslashes($point['nome']); ?>)?')">
+                                            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                                            <input type="hidden" name="action" value="excluir_ponto_mapa">
+                                            <input type="hidden" name="redirect_to" value="mapa.php">
+                                            <input type="hidden" name="id" value="<?php echo $point['id']; ?>">
+                                            <button type="submit" class="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" title="Excluir Ponto (Admin)">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                <?php endif; ?>
                             </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="p-6 text-center space-y-3 my-auto">
+                            <div class="w-10 h-10 rounded-2xl bg-amber-50 text-[#FF8A00] flex items-center justify-center mx-auto">
+                                <i data-lucide="map-pin-off" class="w-5 h-5"></i>
+                            </div>
+                            <h4 class="font-bold text-xs text-slate-800">Nenhum Ponto Mapeado Ainda</h4>
+                            <p class="text-[11px] text-slate-500 leading-relaxed">
+                                Os pontos culturais e serviços aparecerão no mapa assim que cadastrados pelos administradores.
+                            </p>
+                            <?php if (is_admin()): ?>
+                                <a href="dashboard.php?aba=mapa&novo=1" class="px-4 py-2 bg-[#0D5BA8] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#0A4B8A] inline-block">
+                                    + Mapear Primeiro Ponto
+                                </a>
+                            <?php endif; ?>
                         </div>
-                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
 

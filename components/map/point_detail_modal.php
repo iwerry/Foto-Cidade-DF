@@ -6,7 +6,7 @@
 <div id="modal-point-detail" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs modal-container">
     <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in duration-200">
         <div class="h-48 bg-slate-200 relative">
-            <img id="detail-point-img" src="assets/images/oficina-olhar-fercal.jpg" class="w-full h-full object-cover" />
+            <img id="detail-point-img" src="assets/images/oficina-olhar-fercal.jpg" onerror="this.src='assets/images/oficina-olhar-fercal.jpg'" class="w-full h-full object-cover" />
             <button onclick="closeModal('modal-point-detail')" class="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md text-slate-700 hover:text-slate-900 rounded-full shadow-md">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
@@ -35,11 +35,37 @@
                 </div>
                 <div class="flex items-center justify-between text-slate-600">
                     <span class="font-bold">Mapeado Por:</span>
-                    <span id="detail-point-responsavel" class="text-[#0D5BA8] font-bold">Alunos da Trilha</span>
+                    <span id="detail-point-responsavel" class="text-[#0D5BA8] font-bold">FotoCidade DF</span>
                 </div>
             </div>
 
-            <div class="pt-4 flex justify-end">
+            <?php if (function_exists('is_admin') && is_admin()): ?>
+                <!-- Ações Exclusivas para Administradores -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 bg-amber-50/60 p-3 rounded-2xl border border-amber-200">
+                    <div class="flex items-center gap-1.5 text-amber-800 text-[11px] font-bold">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#FF8A00]"></i>
+                        <span>Administrador:</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="dashboard.php?aba=mapa" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs inline-flex items-center gap-1">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            <span>Painel</span>
+                        </a>
+                        <form method="POST" action="dashboard.php" class="inline" onsubmit="return confirm('Deseja realmente EXCLUIR este ponto definitivamente do banco de dados?')">
+                            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                            <input type="hidden" name="action" value="excluir_ponto_mapa">
+                            <input type="hidden" name="redirect_to" value="mapa.php">
+                            <input type="hidden" id="detail-point-delete-id" name="id" value="">
+                            <button type="submit" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs inline-flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                <span>Excluir</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <div class="pt-2 flex justify-end">
                 <button onclick="closeModal('modal-point-detail')" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
                     Fechar
                 </button>

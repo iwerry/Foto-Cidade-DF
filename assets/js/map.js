@@ -10,9 +10,9 @@ function initCulturalMap(pointsData, containerId = 'map-container') {
   const container = document.getElementById(containerId);
   if (!container || typeof L === 'undefined') return;
 
-  // Centro do DF (Brasília)
-  const dfCenter = [-15.7975, -47.8919];
-  const defaultZoom = 11;
+  // Centro do DF (Brasília / Sobradinho)
+  const dfCenter = [-15.6534, -47.7891];
+  const defaultZoom = 12;
 
   // Se já existir mapa, remove para reinicializar limpo
   if (mapInstance) {
@@ -37,29 +37,46 @@ function initCulturalMap(pointsData, containerId = 'map-container') {
   renderMarkers(pointsData);
 }
 
-function getCategoryColor(categoria) {
+function getCategoryInfo(categoria) {
   switch (categoria) {
-    case 'Patrimônio': return '#0D5BA8'; // Azul
-    case 'Espaço Cultural': return '#FF8A00'; // Laranja
-    case 'Coletivo': return '#00A7B5'; // Teal
-    case 'Ponto de Memória': return '#8B5CF6'; // Roxo
-    case 'Arte Urbana': return '#EC4899'; // Rosa
-    case 'Feira Cultural': return '#10B981'; // Verde
-    default: return '#0D5BA8';
+    case 'Patrimônio': return { pin: '#0D5BA8', bg: '#EFF6FF', text: '#1D4ED8' };
+    case 'Espaço Cultural': return { pin: '#FF8A00', bg: '#FFF7ED', text: '#C2410C' };
+    case 'Coletivo': return { pin: '#00A7B5', bg: '#F0FDFA', text: '#0F766E' };
+    case 'Ponto de Memória': return { pin: '#8B5CF6', bg: '#FAF5FF', text: '#7E22CE' };
+    case 'Feira Cultural': return { pin: '#10B981', bg: '#ECFDF5', text: '#047857' };
+    case 'Órgão Público': return { pin: '#2563EB', bg: '#EFF6FF', text: '#1D4ED8' };
+    case 'Hospital': return { pin: '#EF4444', bg: '#FEF2F2', text: '#B91C1C' };
+    case 'Escola': return { pin: '#D97706', bg: '#FFFBEB', text: '#B45309' };
+    case 'Empresa': return { pin: '#6366F1', bg: '#EEF2FF', text: '#4338CA' };
+    case 'ONG': return { pin: '#EC4899', bg: '#FDF2F8', text: '#BE185D' };
+    case 'Instituto': return { pin: '#059669', bg: '#ECFDF5', text: '#065F46' };
+    case 'Associação': return { pin: '#0284C7', bg: '#F0F9FF', text: '#0369A1' };
+    case 'Turismo': return { pin: '#EAB308', bg: '#FEFCE8', text: '#A16207' };
+    default: return { pin: '#0D5BA8', bg: '#EFF6FF', text: '#1D4ED8' };
   }
 }
 
+function getCategoryColor(categoria) {
+  return getCategoryInfo(categoria).pin;
+}
+
 function renderMarkers(points) {
+  if (!mapInstance) return;
+
   // Limpa marcadores existentes
   mapMarkers.forEach(m => mapInstance.removeLayer(m));
   mapMarkers = [];
 
   points.forEach(point => {
-    if (!point.latitude || !point.longitude) return;
+    const lat = point.latitude || point.lat;
+    const lng = point.longitude || point.lng;
+    if (!lat || !lng) return;
 
-    const catColor = getCategoryColor(point.categoria);
+    const catInfo = getCategoryInfo(point.categoria);
+    const catColor = catInfo.pin;
+    const regiao = point.regiaoAdministrativa || point.bairro || point.cidade || 'DF';
 
-    // Ícone SVG customizado para o pino
+    // Ícone SVG customizado para o pino com cor dinâmica da categoria
     const customIcon = L.divIcon({
       className: 'custom-pin-container',
       html: `
@@ -71,16 +88,20 @@ function renderMarkers(points) {
       iconAnchor: [16, 16]
     });
 
-    const marker = L.marker([point.latitude, point.longitude], { icon: customIcon }).addTo(mapInstance);
+    const marker = L.marker([lat, lng], { icon: customIcon }).addTo(mapInstance);
 
     // Conteúdo do Popup
+    const fotoPopup = point.foto || point.imagem || point.logo || '';
+    const imgPopupHtml = fotoPopup ? `<img src="${fotoPopup}" onerror="this.style.display='none'" style="width: 100%; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;" />` : '';
+
     const popupContent = `
-      <div style="width: 220px; font-family: 'Plus Jakarta Sans', sans-serif;">
-        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: #E0F2FE; color: #0369A1; padding: 2px 8px; border-radius: 999px;">${point.categoria}</span>
+      <div style="width: 240px; font-family: 'Plus Jakarta Sans', sans-serif;">
+        ${imgPopupHtml}
+        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: ${catInfo.bg}; color: ${catInfo.text}; padding: 2px 8px; border-radius: 999px; border: 1px solid ${catInfo.pin}30;">${point.categoria || 'Ponto Cultural'}</span>
         <h4 style="margin: 6px 0 2px 0; font-size: 14px; font-weight: 700; color: #0F172A;">${point.nome}</h4>
-        <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748B;">${point.regiaoAdministrativa}</p>
-        <p style="margin: 0 0 10px 0; font-size: 11px; color: #334155; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${point.descricao}</p>
-        <button onclick="openPointDetails('${point.id}')" style="width: 100%; background: #0D5BA8; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Ver Detalhes</button>
+        <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748B;">📍 ${regiao}</p>
+        <p style="margin: 0 0 10px 0; font-size: 11px; color: #334155; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${point.descricao || ''}</p>
+        <button onclick="openPointDetails('${point.id}')" style="width: 100%; background: ${catColor}; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Ver Detalhes</button>
       </div>
     `;
 
@@ -94,16 +115,39 @@ function openPointDetails(pointId) {
   if (modal && window.allMapPoints) {
     const point = window.allMapPoints.find(p => String(p.id) === String(pointId));
     if (point) {
-      document.getElementById('detail-point-nome').textContent = point.nome;
-      document.getElementById('detail-point-ra').textContent = point.regiaoAdministrativa;
-      document.getElementById('detail-point-categoria').textContent = point.categoria;
-      document.getElementById('detail-point-descricao').textContent = point.descricao;
-      document.getElementById('detail-point-endereco').textContent = point.endereco || point.regiaoAdministrativa;
-      document.getElementById('detail-point-responsavel').textContent = point.responsavel || 'Comunidade Local';
-      if (point.imagemUrl) {
-        document.getElementById('detail-point-img').src = point.imagemUrl;
+      const reg = point.regiaoAdministrativa || point.bairro || point.cidade || 'DF';
+      const catInfo = getCategoryInfo(point.categoria);
+      const elNome = document.getElementById('detail-point-nome');
+      const elRa = document.getElementById('detail-point-ra');
+      const elCat = document.getElementById('detail-point-categoria');
+      const elDesc = document.getElementById('detail-point-descricao');
+      const elEnd = document.getElementById('detail-point-endereco');
+      const elResp = document.getElementById('detail-point-responsavel');
+      const elImg = document.getElementById('detail-point-img');
+      const elDelId = document.getElementById('detail-point-delete-id');
+
+      if (elNome) elNome.textContent = point.nome;
+      if (elRa) elRa.textContent = reg;
+      if (elCat) {
+        elCat.textContent = point.categoria;
+        elCat.style.backgroundColor = catInfo.pin;
+      }
+      if (elDesc) elDesc.textContent = point.descricao;
+      if (elEnd) elEnd.textContent = point.endereco || reg;
+      if (elResp) elResp.textContent = point.responsavel || point.autorRegistro || 'FotoCidade DF';
+      if (elDelId) elDelId.value = point.id;
+      
+      const fotoUrl = point.foto || point.imagem || point.logo || point.imagemUrl || 'assets/images/oficina-olhar-fercal.jpg';
+      if (elImg) {
+        elImg.src = fotoUrl;
+        elImg.onerror = function() {
+          this.src = 'assets/images/oficina-olhar-fercal.jpg';
+        };
       }
       openModal('modal-point-detail');
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
     }
   }
 }

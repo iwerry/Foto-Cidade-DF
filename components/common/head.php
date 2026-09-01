@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) . ' • ' . SITE_NAME : SITE_TITLE; ?></title>
     <meta name="description" content="<?php echo SITE_DESCRIPTION; ?>">
     
@@ -48,7 +49,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <!-- Custom JS -->
-    <script src="assets/js/main.js" defer></script>
-    <script src="assets/js/map.js" defer></script>
+    <script src="assets/js/main.js?v=<?php echo time(); ?>" defer></script>
+    <script src="assets/js/map.js?v=<?php echo time(); ?>" defer></script>
 </head>
 <body class="bg-[#F8FAFC] text-[#333333] font-sans antialiased selection:bg-[#00A7B5] selection:text-white min-h-screen flex flex-col">

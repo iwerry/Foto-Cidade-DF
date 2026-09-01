@@ -109,6 +109,11 @@
                 <span class="flex items-center gap-1 text-slate-300">
                     Feito com <i data-lucide="heart" class="w-3.5 h-3.5 text-rose-500 fill-rose-500"></i> pela Cultura Comunitária
                 </span>
+                <span class="text-slate-600">•</span>
+                <a href="login.php" class="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1 text-[11px]" title="Acesso Administrativo / Painel Gestor">
+                    <i data-lucide="lock" class="w-3 h-3"></i>
+                    <span>Área Restrita</span>
+                </a>
             </div>
         </div>
     </div>

@@ -4,29 +4,28 @@
  */
 require_once __DIR__ . '/config.php';
 
+require_once ROOT_PATH . '/auth_helper.php';
+
 $activeTab = 'trilha';
-$pageTitle = 'A Trilha Formativa • Mapeamento, Fotografia e Produção';
+$pageTitle = 'Trilha de Formação FotoCidade DF';
 
 $trilhas = get_trilhas();
-$user = get_user_profile();
-$submissions = [
-    [
-        'id' => 'sub-1',
-        'tituloTrabalho' => 'Mapeamento das Nascentes do Córrego Sobradinho',
-        'alunoNome' => 'Ana Silva',
-        'bairro' => 'Sobradinho II',
-        'dataEnvio' => 'Ontem, 14:20',
-        'status' => 'Aprovado'
-    ],
-    [
-        'id' => 'sub-2',
-        'tituloTrabalho' => 'Ensaio Fotográfico: As Olearias da Fercal',
-        'alunoNome' => 'Ana Silva',
-        'bairro' => 'Fercal',
-        'dataEnvio' => '12/08/2026',
-        'status' => 'Em Análise'
-    ]
-];
+$loggedUser = get_logged_user();
+$user = get_user_profile($loggedUser['id'] ?? null);
+
+$submissions = [];
+if ($loggedUser) {
+    $submissions = [
+        [
+            'id' => 'sub-1',
+            'tituloTrabalho' => 'Mapeamento Cultural do Território',
+            'alunoNome' => $loggedUser['nome'],
+            'bairro' => $loggedUser['cidade'] ?? 'Sobradinho',
+            'dataEnvio' => 'Recente',
+            'status' => 'Em Andamento'
+        ]
+    ];
+}
 
 $selectedEixoId = isset($_GET['eixo']) ? (int)$_GET['eixo'] : 1;
 $currentEixo = null;
@@ -72,18 +71,32 @@ require_once ROOT_PATH . '/components/common/navbar.php';
             <div class="lg:col-span-3 space-y-6">
                 <!-- Student Profile Card -->
                 <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-                    <div class="flex items-center gap-3">
-                        <img src="<?php echo htmlspecialchars($user['avatar']); ?>"
-                             alt="<?php echo htmlspecialchars($user['nome']); ?>"
-                             class="w-12 h-12 rounded-full object-cover ring-2 ring-[#00A7B5]" />
-                        <div class="min-w-0">
-                            <h3 class="font-heading font-bold text-slate-900 text-sm truncate"><?php echo htmlspecialchars($user['nome']); ?></h3>
-                            <p class="text-[11px] text-slate-500 truncate"><?php echo htmlspecialchars($user['cidade']); ?></p>
-                            <span class="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                Agente Ativo
-                            </span>
+                    <?php if ($loggedUser): ?>
+                        <div class="flex items-center gap-3">
+                            <img src="<?php echo htmlspecialchars($user['avatar'] ?? 'assets/images/avatar-default.jpg'); ?>"
+                                 onerror="this.src='assets/images/avatar-default.jpg'"
+                                 alt="<?php echo htmlspecialchars($user['nome']); ?>"
+                                 class="w-12 h-12 rounded-full object-cover ring-2 ring-[#00A7B5] bg-white shadow-xs" />
+                            <div class="min-w-0">
+                                <h3 class="font-heading font-bold text-slate-900 text-sm truncate"><?php echo htmlspecialchars($user['nome']); ?></h3>
+                                <p class="text-[11px] text-slate-500 truncate"><?php echo htmlspecialchars($user['cidade'] ?? 'DF'); ?></p>
+                                <span class="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                    Agente Ativo
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                    <?php else: ?>
+                        <div class="text-center space-y-2 py-2">
+                            <div class="w-12 h-12 rounded-full bg-blue-50 text-[#0D5BA8] flex items-center justify-center mx-auto">
+                                <i data-lucide="user" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="font-heading font-bold text-slate-900 text-sm">Área de Missões</h3>
+                            <p class="text-[11px] text-slate-500">Faça login para salvar suas atividades e obter certificados.</p>
+                            <a href="login.php" class="inline-block w-full py-2 px-3 bg-[#0D5BA8] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#09427D] transition-colors">
+                                Entrar na Minha Conta
+                            </a>
+                        </div>
+                    <?php endif; ?>
 
                     <!-- Navigation links inside sidebar -->
                     <div class="space-y-1 pt-2 border-t border-slate-100 text-xs font-semibold">
@@ -94,7 +107,7 @@ require_once ROOT_PATH . '/components/common/navbar.php';
 
                         <a href="perfil.php" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-slate-600 hover:bg-slate-50">
                             <i data-lucide="award" class="w-4 h-4 text-[#FF8A00]"></i>
-                            <span>Minhas Insígnias (<?php echo count($user['selos']); ?>)</span>
+                            <span>Minhas Insígnias (<?php echo count($user['selos'] ?? []); ?>)</span>
                         </a>
 
                         <a href="parceiros.php" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-slate-600 hover:bg-slate-50">

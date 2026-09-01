@@ -2,15 +2,16 @@
 # FotoCidade DF - Apache Configuration (.htaccess)
 # ====================================================================
 
-# 1. FORÇAR HTTPS / SSL EM TODAS AS REQUISIÇÕES
+# 1. FORÇAR HTTPS / SSL EM TODAS AS PÁGINAS
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Redirecionar HTTP para HTTPS (compatível com Proxy e Load Balancers como Cloudflare/cPanel)
-    RewriteCond %{HTTPS} off [OR]
-    RewriteCond %{HTTP:X-Forwarded-Proto} !https
-    RewriteCond %{HTTP_HOST} ^(?:www\.)?(.*)$ [NC]
+    # Redirecionamento Universal para HTTPS
+    RewriteCond %{HTTPS} !on [NC,OR]
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC,OR]
+    RewriteCond %{HTTP:X-Forwarded-SSL} !on [NC,OR]
+    RewriteCond %{SERVER_PORT} !^443$
     RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 </IfModule>
 
@@ -20,12 +21,12 @@ AddDefaultCharset UTF-8
     AddCharset UTF-8 .html .php .css .js .json .xml
 </IfModule>
 
-# 3. SEGURANÇA E PROTEÇÃO DE ARQUIVOS
+# 3. SEGURANÇA BÁSICA E CABEÇALHOS SSL
 # Desativa listagem de diretórios
 Options -Indexes
 
 # Bloqueia acesso a arquivos ocultos (.git, .env, etc.) e sensíveis
-<FilesMatch "(^\.|\.json$|\.lock$|package\.json|tsconfig\.json|vite\.config\.ts)$">
+<FilesMatch "(^\.|\.lock$|package\.json|tsconfig\.json|vite\.config\.ts)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
@@ -35,19 +36,10 @@ Options -Indexes
     </IfModule>
 </FilesMatch>
 
-# Permitir leitura pública dos JSONs de dados da aplicação se necessário
-<FilesMatch "(artistas|dados_mapa|parceiros|trilhas|vitrine)\.json$">
-    <IfModule mod_authz_core.c>
-        Require all granted
-    </IfModule>
-    <IfModule !mod_authz_core.c>
-        Order allow,deny
-        Allow from all
-    </IfModule>
-</FilesMatch>
-
 # Cabeçalhos de Segurança
 <IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    Header always set Content-Security-Policy "upgrade-insecure-requests"
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set X-XSS-Protection "1; mode=block"
