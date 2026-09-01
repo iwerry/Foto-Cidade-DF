@@ -105,6 +105,7 @@ function renderMarkers(points) {
       </div>
     `;
 
+    marker.pointId = point.id;
     marker.bindPopup(popupContent);
     mapMarkers.push(marker);
   });
@@ -144,6 +145,15 @@ function openPointDetails(pointId) {
           this.src = 'assets/images/oficina-olhar-fercal.jpg';
         };
       }
+
+      if (mapInstance && point.lat && point.lng) {
+        mapInstance.setView([point.lat, point.lng], 15);
+        const m = mapMarkers.find(mk => String(mk.pointId) === String(pointId));
+        if (m) {
+          m.openPopup();
+        }
+      }
+
       openModal('modal-point-detail');
       if (typeof lucide !== 'undefined' && lucide.createIcons) {
         lucide.createIcons();
