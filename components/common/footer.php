@@ -9,8 +9,8 @@
             
             <!-- Column 1: Brand & Slogan -->
             <div class="lg:col-span-2 space-y-4">
-                <div class="bg-white/95 p-3 rounded-xl inline-block shadow-sm">
-                    <?php render_logo('md', true, 'index.php'); ?>
+                <div class="bg-white/95 p-2.5 rounded-2xl inline-block shadow-sm">
+                    <?php render_logo('md', true, 'index.php', '', 'full'); ?>
                 </div>
                 <p class="text-slate-300 text-sm leading-relaxed max-w-md">
                     Uma trilha de formação em Mapeamento Territorial, Produção Cultural e Comunicação Comunitária. 
