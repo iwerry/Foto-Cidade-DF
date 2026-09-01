@@ -566,61 +566,163 @@ function get_artistas() {
 }
 
 /**
- * Obtém os eixos formativos e capítulos/missões (Estilo Moodle)
+ * ============================================================================
+ * LMS & GESTÃO DE CURSOS / TRILHAS DE APRENDIZADO
+ * ============================================================================
+ */
+
+/**
+ * Retorna todas as Trilhas cadastradas
+ */
+function get_all_trilhas() {
+    $pdo = get_db_connection();
+    if (!$pdo) return [];
+
+    try {
+        $stmt = $pdo->query("SELECT * FROM `trilhas_cursos` ORDER BY `ordem` ASC, `id` ASC");
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("DB get_all_trilhas error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Retorna todos os cursos (com opção de filtrar por trilha_id)
+ */
+function get_cursos($trilhaId = null) {
+    $pdo = get_db_connection();
+    if (!$pdo) return [];
+
+    try {
+        $sql = "SELECT c.*, t.titulo AS trilha_titulo, t.eixo AS trilha_eixo 
+                FROM `cursos` c 
+                LEFT JOIN `trilhas_cursos` t ON c.trilha_id = t.id";
+        $params = [];
+
+        if ($trilhaId) {
+            $sql .= " WHERE c.trilha_id = ?";
+            $params[] = $trilhaId;
+        }
+
+        $sql .= " ORDER BY c.ordem ASC, c.id DESC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $cursos = $stmt->fetchAll();
+
+        // Para cada curso, calcula o total de módulos e aulas
+        foreach ($cursos as &$c) {
+            $stmtMod = $pdo->prepare("SELECT COUNT(*) FROM `modulos` WHERE curso_id = ?");
+            $stmtMod->execute([$c['id']]);
+            $c['total_modulos'] = (int)$stmtMod->fetchColumn();
+
+            $stmtAul = $pdo->prepare("SELECT COUNT(*) FROM `aulas` a INNER JOIN `modulos` m ON a.modulo_id = m.id WHERE m.curso_id = ?");
+            $stmtAul->execute([$c['id']]);
+            $c['total_aulas'] = (int)$stmtAul->fetchColumn();
+        }
+
+        return $cursos;
+    } catch (Exception $e) {
+        error_log("DB get_cursos error: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Retorna os detalhes de um curso específico com todos os seus módulos e aulas
+ */
+function get_curso_completo($cursoId) {
+    $pdo = get_db_connection();
+    if (!$pdo) return null;
+
+    try {
+        $stmt = $pdo->prepare("SELECT c.*, t.titulo AS trilha_titulo FROM `cursos` c LEFT JOIN `trilhas_cursos` t ON c.trilha_id = t.id WHERE c.id = ?");
+        $stmt->execute([$cursoId]);
+        $curso = $stmt->fetch();
+        if (!$curso) return null;
+
+        // Módulos
+        $stmtMod = $pdo->prepare("SELECT * FROM `modulos` WHERE curso_id = ? ORDER BY `ordem` ASC, `id` ASC");
+        $stmtMod->execute([$cursoId]);
+        $modulos = $stmtMod->fetchAll();
+
+        foreach ($modulos as &$m) {
+            // Aulas do módulo
+            $stmtAul = $pdo->prepare("SELECT * FROM `aulas` WHERE modulo_id = ? ORDER BY `ordem` ASC, `id` ASC");
+            $stmtAul->execute([$m['id']]);
+            $aulas = $stmtAul->fetchAll();
+
+            foreach ($aulas as &$a) {
+                // Anexos da aula
+                $stmtAnx = $pdo->prepare("SELECT * FROM `anexos_aulas` WHERE aula_id = ? ORDER BY id ASC");
+                $stmtAnx->execute([$a['id']]);
+                $a['anexos'] = $stmtAnx->fetchAll();
+
+                // Quizzes da aula
+                $stmtQz = $pdo->prepare("SELECT * FROM `quizzes` WHERE aula_id = ? ORDER BY id ASC");
+                $stmtQz->execute([$a['id']]);
+                $a['quizzes'] = $stmtQz->fetchAll();
+            }
+
+            $m['aulas'] = $aulas;
+        }
+
+        $curso['modulos'] = $modulos;
+        return $curso;
+    } catch (Exception $e) {
+        error_log("DB get_curso_completo error: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Retorna os dados completos de uma aula
+ */
+function get_aula_completa($aulaId) {
+    $pdo = get_db_connection();
+    if (!$pdo) return null;
+
+    try {
+        $stmt = $pdo->prepare("SELECT a.*, m.titulo AS modulo_titulo, m.curso_id, c.titulo AS curso_titulo, c.trilha_id 
+                               FROM `aulas` a 
+                               INNER JOIN `modulos` m ON a.modulo_id = m.id 
+                               INNER JOIN `cursos` c ON m.curso_id = c.id 
+                               WHERE a.id = ?");
+        $stmt->execute([$aulaId]);
+        $aula = $stmt->fetch();
+        if (!$aula) return null;
+
+        $stmtAnx = $pdo->prepare("SELECT * FROM `anexos_aulas` WHERE aula_id = ? ORDER BY id ASC");
+        $stmtAnx->execute([$aulaId]);
+        $aula['anexos'] = $stmtAnx->fetchAll();
+
+        return $aula;
+    } catch (Exception $e) {
+        error_log("DB get_aula_completa error: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Obtém os cursos agrupados por trilhas para exibição pública
  */
 function get_trilhas() {
     $pdo = get_db_connection();
-    if ($pdo) {
-        try {
-            $tableEixos = get_existing_table_name($pdo, 'trilhas_eixos', 'trilhas_cursos');
-            $tableMissoes = get_existing_table_name($pdo, 'trilhas_missoes');
+    if (!$pdo) return [];
 
-            $stmtEixos = $pdo->query("SELECT * FROM `{$tableEixos}` ORDER BY id ASC");
-            $eixos = $stmtEixos->fetchAll();
-            if (!empty($eixos)) {
-                $result = [];
+    try {
+        $trilhas = get_all_trilhas();
+        if (empty($trilhas)) return [];
 
-                foreach ($eixos as $e) {
-                    $missoes = [];
-                    try {
-                        $stmtMissoes = $pdo->prepare("SELECT * FROM `{$tableMissoes}` WHERE eixo_id = ? ORDER BY id ASC");
-                        $stmtMissoes->execute([$e['id']]);
-                        $missoesRows = $stmtMissoes->fetchAll();
-
-                        foreach ($missoesRows as $m) {
-                            $missoes[] = [
-                                'id' => $m['id'],
-                                'numero' => $m['numero_missao'] ?? 1,
-                                'titulo' => $m['titulo'] ?? 'Missão',
-                                'descricaoCurta' => $m['descricao_curta'] ?? '',
-                                'descricaoCompleta' => $m['descricao_completa'] ?? '',
-                                'duracaoHoras' => (int)($m['duracao_horas'] ?? 4),
-                                'prazo' => $m['prazo'] ?? '7 dias',
-                                'entregasRequeridas' => $m['entregas_requeridas'] ?? 'Relatório e fotos',
-                                'status' => 'em_andamento'
-                            ];
-                        }
-                    } catch (Exception $e2) {}
-
-                    $result[] = [
-                        'id' => (int)($e['numero_eixo'] ?? $e['id']),
-                        'db_id' => $e['id'],
-                        'titulo' => $e['titulo'],
-                        'subtitulo' => $e['subtitulo'] ?? '',
-                        'cargaHoraria' => $e['carga_horaria'] ?? '20 Horas',
-                        'cor' => $e['cor'] ?? '#0D5BA8',
-                        'icone' => $e['icone'] ?? 'compass',
-                        'descricao' => $e['descricao'] ?? '',
-                        'missoes' => $missoes
-                    ];
-                }
-                return $result;
-            }
-        } catch (Exception $e) {
-            error_log("DB get_trilhas error: " . $e->getMessage());
+        foreach ($trilhas as &$t) {
+            $t['cursos'] = get_cursos($t['id']);
         }
-    }
 
-    return [];
+        return $trilhas;
+    } catch (Exception $e) {
+        error_log("DB get_trilhas error: " . $e->getMessage());
+        return [];
+    }
 }
+
 

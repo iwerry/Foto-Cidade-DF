@@ -583,62 +583,227 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // -------------------------------------------------------------
-        // 5. CRUD CURSOS E TRILHAS (Estilo Moodle)
+        // 5. CRUD LMS: TRILHAS, CURSOS, MÓDULOS, AULAS, ANEXOS & QUIZZES
         // -------------------------------------------------------------
-        elseif ($action === 'salvar_eixo') {
+        elseif ($action === 'salvar_trilha') {
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
-            $numeroEixo = (int)($_POST['numero_eixo'] ?? 1);
             $titulo = trim($_POST['titulo'] ?? '');
-            $subtitulo = trim($_POST['subtitulo'] ?? '');
-            $cargaHoraria = trim($_POST['carga_horaria'] ?? '20 Horas');
-            $cor = $_POST['cor'] ?? '#0D5BA8';
-            $icone = $_POST['icone'] ?? 'compass';
             $descricao = trim($_POST['descricao'] ?? '');
+            $eixo = trim($_POST['eixo'] ?? '');
+            $cargaHoraria = trim($_POST['carga_horaria'] ?? '');
+            $ordem = (int)($_POST['ordem'] ?? 0);
+            $status = in_array($_POST['status'] ?? '', ['ativo', 'inativo', 'rascunho']) ? $_POST['status'] : 'ativo';
 
-            if ($pdo) {
+            if ($pdo && !empty($titulo)) {
                 try {
-                    $tableEixos = get_existing_table_name($pdo, 'trilhas_eixos', 'trilhas_cursos');
                     if ($id) {
-                        $stmt = $pdo->prepare("UPDATE `{$tableEixos}` SET numero_eixo=?, titulo=?, subtitulo=?, carga_horaria=?, cor=?, icone=?, descricao=? WHERE id=?");
-                        $stmt->execute([$numeroEixo, $titulo, $subtitulo, $cargaHoraria, $cor, $icone, $descricao, $id]);
-                        $mensagemSucesso = 'Eixo da Trilha atualizado com sucesso!';
+                        $stmt = $pdo->prepare("UPDATE `trilhas_cursos` SET titulo=?, descricao=?, eixo=?, carga_horaria=?, ordem=?, status=? WHERE id=?");
+                        $stmt->execute([$titulo, $descricao, $eixo, $cargaHoraria, $ordem, $status, $id]);
+                        $mensagemSucesso = 'Trilha de Aprendizado atualizada com sucesso!';
                     } else {
-                        $stmt = $pdo->prepare("INSERT INTO `{$tableEixos}` (numero_eixo, titulo, subtitulo, carga_horaria, cor, icone, descricao, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                        $stmt->execute([$numeroEixo, $titulo, $subtitulo, $cargaHoraria, $cor, $icone, $descricao, $numeroEixo]);
-                        $mensagemSucesso = 'Novo Eixo formativo criado com sucesso!';
+                        $stmt = $pdo->prepare("INSERT INTO `trilhas_cursos` (titulo, descricao, eixo, carga_horaria, ordem, status) VALUES (?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([$titulo, $descricao, $eixo, $cargaHoraria, $ordem, $status]);
+                        $mensagemSucesso = 'Nova Trilha criada com sucesso!';
                     }
                 } catch (Exception $e) {
-                    $mensagemErro = 'Erro ao salvar eixo: ' . $e->getMessage();
+                    $mensagemErro = 'Erro ao salvar trilha: ' . $e->getMessage();
                 }
             }
             $abaAtiva = 'cursos';
         }
 
-        elseif ($action === 'salvar_missao') {
-            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
-            $eixoId = (int)$_POST['eixo_id'];
-            $numeroMissao = (int)($_POST['numero_missao'] ?? 1);
-            $titulo = trim($_POST['titulo'] ?? '');
-            $descricaoCurta = trim($_POST['descricao_curta'] ?? '');
-            $descricaoCompleta = trim($_POST['descricao_completa'] ?? '');
-            $duracaoHoras = (int)($_POST['duracao_horas'] ?? 4);
-            $prazo = trim($_POST['prazo'] ?? '7 dias');
-            $entregasRequeridas = trim($_POST['entregas_requeridas'] ?? '');
-
-            if ($pdo) {
+        elseif ($action === 'excluir_trilha') {
+            $id = (int)$_POST['id'];
+            if ($pdo && $id) {
                 try {
-                    $tableMissoes = get_existing_table_name($pdo, 'trilhas_missoes');
-                    if ($id) {
-                        $stmt = $pdo->prepare("UPDATE `{$tableMissoes}` SET eixo_id=?, numero_missao=?, titulo=?, descricao_curta=?, descricao_completa=?, duracao_horas=?, prazo=?, entregas_requeridas=? WHERE id=?");
-                        $stmt->execute([$eixoId, $numeroMissao, $titulo, $descricaoCurta, $descricaoCompleta, $duracaoHoras, $prazo, $entregasRequeridas, $id]);
-                        $mensagemSucesso = 'Missão atualizada com sucesso!';
-                    } else {
-                        $stmt = $pdo->prepare("INSERT INTO `{$tableMissoes}` (eixo_id, numero_missao, titulo, descricao_curta, descricao_completa, duracao_horas, prazo, entregas_requeridas, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                        $stmt->execute([$eixoId, $numeroMissao, $titulo, $descricaoCurta, $descricaoCompleta, $duracaoHoras, $prazo, $entregasRequeridas, $numeroMissao]);
-                        $mensagemSucesso = 'Nova Missão adicionada à trilha com sucesso!';
-                    }
+                    $stmt = $pdo->prepare("DELETE FROM `trilhas_cursos` WHERE id=?");
+                    $stmt->execute([$id]);
+                    $mensagemSucesso = 'Trilha excluída com sucesso!';
                 } catch (Exception $e) {
-                    $mensagemErro = 'Erro ao salvar missão: ' . $e->getMessage();
+                    $mensagemErro = 'Erro ao excluir trilha: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'cursos';
+        }
+
+        elseif ($action === 'salvar_curso') {
+            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+            $trilhaId = !empty($_POST['trilha_id']) ? (int)$_POST['trilha_id'] : null;
+            $titulo = trim($_POST['titulo'] ?? '');
+            $descricao = trim($_POST['descricao'] ?? '');
+            $cargaHoraria = trim($_POST['carga_horaria'] ?? '');
+            $professorNome = trim($_POST['professor_nome'] ?? 'FotoCidade DF');
+            $ordem = (int)($_POST['ordem'] ?? 0);
+            $status = in_array($_POST['status'] ?? '', ['ativo', 'inativo', 'rascunho']) ? $_POST['status'] : 'rascunho';
+            $capaUrl = $_POST['capa_atual'] ?? '';
+
+            if (isset($_FILES['capa_arquivo']) && $_FILES['capa_arquivo']['error'] === UPLOAD_ERR_OK) {
+                $upload = upload_curso_capa($_FILES['capa_arquivo'], $titulo, $id ?: time());
+                if ($upload['success']) {
+                    $capaUrl = $upload['path'];
+                }
+            }
+
+            if ($pdo && !empty($titulo)) {
+                try {
+                    if ($id) {
+                        $stmt = $pdo->prepare("UPDATE `cursos` SET trilha_id=?, titulo=?, descricao=?, capa_url=?, carga_horaria=?, professor_nome=?, ordem=?, status=? WHERE id=?");
+                        $stmt->execute([$trilhaId, $titulo, $descricao, $capaUrl, $cargaHoraria, $professorNome, $ordem, $status, $id]);
+                        $mensagemSucesso = 'Curso atualizado com sucesso!';
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO `cursos` (trilha_id, titulo, descricao, capa_url, carga_horaria, professor_nome, ordem, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([$trilhaId, $titulo, $descricao, $capaUrl, $cargaHoraria, $professorNome, $ordem, $status]);
+                        $id = $pdo->lastInsertId();
+                        $mensagemSucesso = 'Novo curso criado com sucesso!';
+                    }
+                    header("Location: dashboard.php?aba=cursos&curso_id={$id}&msg=salvo");
+                    exit;
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao salvar curso: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'cursos';
+        }
+
+        elseif ($action === 'excluir_curso') {
+            $id = (int)$_POST['id'];
+            if ($pdo && $id) {
+                try {
+                    $stmt = $pdo->prepare("DELETE FROM `cursos` WHERE id=?");
+                    $stmt->execute([$id]);
+                    $mensagemSucesso = 'Curso excluído com sucesso!';
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao excluir curso: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'cursos';
+        }
+
+        elseif ($action === 'salvar_modulo') {
+            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+            $cursoId = (int)$_POST['curso_id'];
+            $titulo = trim($_POST['titulo'] ?? '');
+            $descricao = trim($_POST['descricao'] ?? '');
+            $ordem = (int)($_POST['ordem'] ?? 0);
+
+            if ($pdo && !empty($titulo) && $cursoId) {
+                try {
+                    if ($id) {
+                        $stmt = $pdo->prepare("UPDATE `modulos` SET titulo=?, descricao=?, ordem=? WHERE id=?");
+                        $stmt->execute([$titulo, $descricao, $ordem, $id]);
+                        $mensagemSucesso = 'Módulo atualizado com sucesso!';
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO `modulos` (curso_id, titulo, descricao, ordem) VALUES (?, ?, ?, ?)");
+                        $stmt->execute([$cursoId, $titulo, $descricao, $ordem]);
+                        $mensagemSucesso = 'Novo Módulo adicionado ao curso!';
+                    }
+                    header("Location: dashboard.php?aba=cursos&curso_id={$cursoId}&msg=modulo_salvo");
+                    exit;
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao salvar módulo: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'cursos';
+        }
+
+        elseif ($action === 'excluir_modulo') {
+            $id = (int)$_POST['id'];
+            $cursoId = (int)$_POST['curso_id'];
+            if ($pdo && $id) {
+                try {
+                    $stmt = $pdo->prepare("DELETE FROM `modulos` WHERE id=?");
+                    $stmt->execute([$id]);
+                    $mensagemSucesso = 'Módulo excluído com sucesso!';
+                    header("Location: dashboard.php?aba=cursos&curso_id={$cursoId}&msg=modulo_excluido");
+                    exit;
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao excluir módulo: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'cursos';
+        }
+
+        elseif ($action === 'salvar_aula') {
+            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+            $moduloId = (int)$_POST['modulo_id'];
+            $cursoId = (int)$_POST['curso_id'];
+            $titulo = trim($_POST['titulo'] ?? '');
+            $conteudo = $_POST['conteudo'] ?? '';
+            $tipoVideo = in_array($_POST['tipo_video'] ?? '', ['youtube', 'vimeo', 'upload', 'nenhum']) ? $_POST['tipo_video'] : 'nenhum';
+            $urlVideo = trim($_POST['url_video'] ?? '');
+            $duracaoMinutos = (int)($_POST['duracao_minutos'] ?? 0);
+            $ordem = (int)($_POST['ordem'] ?? 0);
+            $status = in_array($_POST['status'] ?? '', ['publicado', 'rascunho']) ? $_POST['status'] : 'publicado';
+
+            // Se enviou vídeo local em upload
+            if ($tipoVideo === 'upload' && isset($_FILES['video_arquivo']) && $_FILES['video_arquivo']['error'] === UPLOAD_ERR_OK) {
+                $uploadVid = upload_aula_video($_FILES['video_arquivo'], $titulo, $id ?: time());
+                if ($uploadVid['success']) {
+                    $urlVideo = $uploadVid['path'];
+                }
+            }
+
+            if ($pdo && !empty($titulo) && $moduloId) {
+                try {
+                    if ($id) {
+                        $stmt = $pdo->prepare("UPDATE `aulas` SET modulo_id=?, titulo=?, conteudo=?, tipo_video=?, url_video=?, duracao_minutos=?, ordem=?, status=? WHERE id=?");
+                        $stmt->execute([$moduloId, $titulo, $conteudo, $tipoVideo, $urlVideo, $duracaoMinutos, $ordem, $status, $id]);
+                        $aulaId = $id;
+                        $mensagemSucesso = 'Aula atualizada com sucesso!';
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO `aulas` (modulo_id, titulo, conteudo, tipo_video, url_video, duracao_minutos, ordem, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([$moduloId, $titulo, $conteudo, $tipoVideo, $urlVideo, $duracaoMinutos, $ordem, $status]);
+                        $aulaId = $pdo->lastInsertId();
+                        $mensagemSucesso = 'Nova aula publicada com sucesso!';
+                    }
+
+                    // Processa anexo/documento de apoio caso tenha sido enviado
+                    if (isset($_FILES['anexo_arquivo']) && $_FILES['anexo_arquivo']['error'] === UPLOAD_ERR_OK) {
+                        $uploadAnx = upload_aula_anexo($_FILES['anexo_arquivo'], $titulo, time());
+                        if ($uploadAnx['success']) {
+                            $stmtAnx = $pdo->prepare("INSERT INTO `anexos_aulas` (aula_id, nome_arquivo, url_arquivo, tamanho_bytes) VALUES (?, ?, ?, ?)");
+                            $stmtAnx->execute([$aulaId, $uploadAnx['nomeOriginal'], $uploadAnx['path'], $uploadAnx['tamanho']]);
+                        }
+                    }
+
+                    header("Location: dashboard.php?aba=cursos&curso_id={$cursoId}&msg=aula_salva");
+                    exit;
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao salvar aula: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'cursos';
+        }
+
+        elseif ($action === 'excluir_aula') {
+            $id = (int)$_POST['id'];
+            $cursoId = (int)$_POST['curso_id'];
+            if ($pdo && $id) {
+                try {
+                    $stmt = $pdo->prepare("DELETE FROM `aulas` WHERE id=?");
+                    $stmt->execute([$id]);
+                    $mensagemSucesso = 'Aula excluída com sucesso!';
+                    header("Location: dashboard.php?aba=cursos&curso_id={$cursoId}&msg=aula_excluida");
+                    exit;
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao excluir aula: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'cursos';
+        }
+
+        elseif ($action === 'excluir_anexo') {
+            $anexoId = (int)$_POST['anexo_id'];
+            $cursoId = (int)$_POST['curso_id'];
+            if ($pdo && $anexoId) {
+                try {
+                    $stmt = $pdo->prepare("DELETE FROM `anexos_aulas` WHERE id=?");
+                    $stmt->execute([$anexoId]);
+                    $mensagemSucesso = 'Anexo removido da aula!';
+                    header("Location: dashboard.php?aba=cursos&curso_id={$cursoId}&msg=anexo_removido");
+                    exit;
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao excluir anexo: ' . $e->getMessage();
                 }
             }
             $abaAtiva = 'cursos';
@@ -654,6 +819,11 @@ $mapaPoints = get_map_data();
 $parceirosList = get_parceiros();
 $talentosList = get_talentos();
 $trilhasList = get_trilhas();
+$trilhasLMS = get_all_trilhas();
+$filtroTrilhaId = isset($_GET['trilha_id']) && $_GET['trilha_id'] !== '' ? (int)$_GET['trilha_id'] : null;
+$cursosLMS = get_cursos($filtroTrilhaId);
+$cursoSelecionadoId = isset($_GET['curso_id']) ? (int)$_GET['curso_id'] : null;
+$cursoAtivoDetalhes = $cursoSelecionadoId ? get_curso_completo($cursoSelecionadoId) : (!empty($cursosLMS) ? get_curso_completo($cursosLMS[0]['id']) : null);
 
 // Lista de Usuários diretamente do MySQL
 $usuariosList = [];
@@ -1215,41 +1385,310 @@ require_once ROOT_PATH . '/components/common/logo.php';
         <?php endif; ?>
 
         <!-- ============================================================= -->
-        <!-- ABA 6: TRILHAS E CURSOS (MISSÕES PEDAGÓGICAS) -->
+        <!-- ABA 6: GESTÃO DE CURSOS & TRILHAS DE APRENDIZADO (LMS COMPLETO) -->
         <!-- ============================================================= -->
         <?php if ($abaAtiva === 'cursos'): ?>
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-6 p-6 animate-in fade-in duration-200">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                    <div>
-                        <h2 class="font-heading font-bold text-xl text-slate-900">Cursos & Trilhas de Aprendizado</h2>
-                        <p class="text-xs text-slate-500">Gestão dos cursos de formação do FotoCidade DF. Conjuntos de cursos compõem as Trilhas de Formação.</p>
+            <div class="space-y-8 animate-in fade-in duration-200">
+                
+                <!-- Header & Action Bar -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#0D5BA8] text-xs font-bold mb-2">
+                                <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                                <span>Ambiente Pedagógico & LMS</span>
+                            </div>
+                            <h2 class="font-heading font-extrabold text-2xl text-slate-900">Gestão de Cursos e Trilhas</h2>
+                            <p class="text-xs text-slate-500 mt-1 max-w-2xl">
+                                Crie cursos práticos, estruture módulos e publique aulas ricas com vídeos (YouTube ou upload local), anexos em PDF e trilhas formativas.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button onclick="abrirModalTrilha()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer">
+                                <i data-lucide="layers" class="w-4 h-4 text-[#0D5BA8]"></i>
+                                <span>+ Nova Trilha</span>
+                            </button>
+                            <button onclick="abrirModalCurso()" class="px-5 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all hover:scale-105 cursor-pointer">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                <span>+ Novo Curso</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter by Trilha & Metrics -->
+                    <div class="pt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <form method="GET" action="dashboard.php" class="flex items-center gap-2">
+                            <input type="hidden" name="aba" value="cursos">
+                            <label class="text-xs font-bold text-slate-600">Filtrar por Trilha:</label>
+                            <select name="trilha_id" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#0D5BA8]">
+                                <option value="">Todas as Trilhas (<?php echo count($cursosLMS); ?> cursos)</option>
+                                <?php foreach ($trilhasLMS as $tr): ?>
+                                    <option value="<?php echo $tr['id']; ?>" <?php echo ($filtroTrilhaId == $tr['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($tr['titulo']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+
+                        <div class="flex items-center gap-4 text-xs text-slate-600 font-semibold">
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#0D5BA8]"></span> <?php echo count($trilhasLMS); ?> Trilhas</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#FF8A00]"></span> <?php echo count($cursosLMS); ?> Cursos</span>
+                        </div>
                     </div>
                 </div>
 
-                <?php if (empty($trilhasList)): ?>
-                    <div class="text-center py-16 px-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                        <div class="w-16 h-16 bg-blue-50 text-[#0D5BA8] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <i data-lucide="book-open" class="w-8 h-8"></i>
+                <!-- Lista de Cursos & Estrutura de Módulos -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <!-- Coluna Esquerda: Lista de Cursos Disponíveis -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-heading font-bold text-base text-slate-900 flex items-center gap-2">
+                                <i data-lucide="book-open" class="w-4 h-4 text-[#0D5BA8]"></i>
+                                <span>Cursos Disponíveis</span>
+                            </h3>
+                            <span class="text-xs text-slate-400"><?php echo count($cursosLMS); ?> cadastrados</span>
                         </div>
-                        <h3 class="font-heading font-bold text-slate-800 text-lg">Nenhum Curso ou Trilha Cadastrado</h3>
-                        <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                            Os dados fictícios foram removidos. Em breve o administrador poderá criar cursos e organizá-los diretamente em Trilhas de Formação.
-                        </p>
-                    </div>
-                <?php else: ?>
-                    <div class="space-y-6">
-                        <?php foreach ($trilhasList as $trilhaItem): ?>
-                            <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50 space-y-4">
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                                    <div>
-                                        <h3 class="font-bold text-slate-900 text-base"><?php echo htmlspecialchars($trilhaItem['titulo']); ?></h3>
-                                        <p class="text-xs text-slate-500"><?php echo htmlspecialchars($trilhaItem['descricao'] ?? ''); ?></p>
+
+                        <?php if (empty($cursosLMS)): ?>
+                            <div class="p-8 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200 space-y-3">
+                                <div class="w-12 h-12 bg-orange-50 text-[#FF8A00] rounded-2xl flex items-center justify-center mx-auto">
+                                    <i data-lucide="folder-plus" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="font-bold text-sm text-slate-800">Nenhum Curso Criado</h4>
+                                <p class="text-xs text-slate-500">Clique no botão acima para cadastrar o primeiro curso da plataforma.</p>
+                                <button onclick="abrirModalCurso()" class="px-4 py-2 bg-[#FF8A00] text-white font-bold text-xs rounded-xl shadow-xs">
+                                    Criar Primeiro Curso
+                                </button>
+                            </div>
+                        <?php else: ?>
+                            <div class="space-y-3">
+                                <?php foreach ($cursosLMS as $c): 
+                                    $isCurSelected = ($cursoAtivoDetalhes && $cursoAtivoDetalhes['id'] == $c['id']);
+                                ?>
+                                    <div class="p-4 rounded-2xl border transition-all duration-200 bg-white flex flex-col gap-3 <?php echo $isCurSelected ? 'border-[#0D5BA8] shadow-md ring-2 ring-blue-100' : 'border-slate-200 hover:border-slate-300 shadow-2xs'; ?>">
+                                        <div class="flex items-start gap-3.5">
+                                            <img src="<?php echo htmlspecialchars($c['capa_url'] ?: 'assets/images/oficina-olhar-fercal.jpg'); ?>"
+                                                 onerror="this.src='assets/images/oficina-olhar-fercal.jpg'"
+                                                 class="w-16 h-16 rounded-xl object-cover border border-slate-100 shrink-0" />
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <?php if (!empty($c['trilha_titulo'])): ?>
+                                                        <span class="px-2 py-0.5 rounded bg-blue-50 text-[#0D5BA8] text-[10px] font-bold truncate max-w-[150px]">
+                                                            <?php echo htmlspecialchars($c['trilha_titulo']); ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold <?php echo ($c['status'] === 'ativo') ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'; ?>">
+                                                        <?php echo ucfirst($c['status']); ?>
+                                                    </span>
+                                                </div>
+                                                <h4 class="font-heading font-bold text-sm text-slate-900 truncate"><?php echo htmlspecialchars($c['titulo']); ?></h4>
+                                                <p class="text-xs text-slate-500 line-clamp-1"><?php echo htmlspecialchars($c['descricao'] ?? ''); ?></p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
+                                            <div class="flex items-center gap-3 text-[11px]">
+                                                <span>📚 <?php echo $c['total_modulos']; ?> módulos</span>
+                                                <span>🎥 <?php echo $c['total_aulas']; ?> aulas</span>
+                                            </div>
+                                            <div class="flex items-center gap-1.5">
+                                                <a href="dashboard.php?aba=cursos&curso_id=<?php echo $c['id']; ?>" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0D5BA8] font-bold text-xs rounded-lg transition-colors flex items-center gap-1">
+                                                    <span>Módulos & Aulas</span>
+                                                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                                </a>
+                                                <button onclick='editarCurso(<?php echo json_encode($c); ?>)' class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg" title="Editar Informações do Curso">
+                                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                                <form method="POST" action="dashboard.php" class="inline" onsubmit="return confirm('Deseja realmente excluir este curso e todos os seus módulos/aulas?')">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                                                    <input type="hidden" name="action" value="excluir_curso">
+                                                    <input type="hidden" name="id" value="<?php echo $c['id']; ?>">
+                                                    <button type="submit" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg" title="Excluir Curso">
+                                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Seção de Trilhas de Aprendizado -->
+                        <div class="pt-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-heading font-bold text-sm text-slate-900 flex items-center gap-2">
+                                    <i data-lucide="layers" class="w-4 h-4 text-[#0D5BA8]"></i>
+                                    <span>Trilhas Cadastradas</span>
+                                </h4>
+                                <button onclick="abrirModalTrilha()" class="text-xs font-bold text-[#0D5BA8] hover:underline">+ Nova Trilha</button>
+                            </div>
+                            <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
+                                <?php if (empty($trilhasLMS)): ?>
+                                    <p class="text-xs text-slate-400 text-center py-2">Nenhuma trilha cadastrada ainda.</p>
+                                <?php else: ?>
+                                    <?php foreach ($trilhasLMS as $t): ?>
+                                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                                            <div>
+                                                <p class="font-bold text-slate-800"><?php echo htmlspecialchars($t['titulo']); ?></p>
+                                                <p class="text-[10px] text-slate-400"><?php echo htmlspecialchars($t['eixo'] ?? 'Geral'); ?> • <?php echo htmlspecialchars($t['carga_horaria'] ?? '40h'); ?></p>
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                <button onclick='editarTrilha(<?php echo json_encode($t); ?>)' class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                                                    <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                                <form method="POST" action="dashboard.php" class="inline" onsubmit="return confirm('Deseja excluir esta trilha?')">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                                                    <input type="hidden" name="action" value="excluir_trilha">
+                                                    <input type="hidden" name="id" value="<?php echo $t['id']; ?>">
+                                                    <button type="submit" class="p-1 text-rose-600 hover:bg-rose-100 rounded">
+                                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Gerenciador de Módulos e Aulas do Curso Selecionado (Estilo LMS Referência) -->
+                    <div class="lg:col-span-7 space-y-6">
+                        <?php if (!$cursoAtivoDetalhes): ?>
+                            <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-xs space-y-3">
+                                <div class="w-16 h-16 bg-blue-50 text-[#0D5BA8] rounded-2xl flex items-center justify-center mx-auto">
+                                    <i data-lucide="layout-list" class="w-8 h-8"></i>
+                                </div>
+                                <h3 class="font-heading font-bold text-lg text-slate-800">Selecione ou Crie um Curso</h3>
+                                <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                                    Escolha um curso na lista ao lado para gerenciar seus módulos, adicionar aulas, vídeos do YouTube e anexos.
+                                </p>
+                            </div>
+                        <?php else: ?>
+                            <!-- Detalhes do Curso Selecionado -->
+                            <div class="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+                                <div class="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-[#FFC107] bg-white/10 px-2.5 py-1 rounded-full border border-white/20">
+                                            <?php echo htmlspecialchars($cursoAtivoDetalhes['trilha_titulo'] ?? 'Curso Avulso'); ?>
+                                        </span>
+                                        <h3 class="font-heading font-extrabold text-xl text-white mt-2"><?php echo htmlspecialchars($cursoAtivoDetalhes['titulo']); ?></h3>
+                                        <p class="text-xs text-slate-300 mt-1"><?php echo htmlspecialchars($cursoAtivoDetalhes['descricao'] ?? ''); ?></p>
+                                    </div>
+                                    <button onclick="abrirModalModulo(<?php echo $cursoAtivoDetalhes['id']; ?>)" class="px-4 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 shrink-0 cursor-pointer">
+                                        <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                                        <span>+ Novo Módulo</span>
+                                    </button>
+                                </div>
+
+                                <!-- Acordeão de Módulos (Referência: image_f0ab2f.jpg / image_f0ab6d.png) -->
+                                <div class="p-6 space-y-4">
+                                    <?php if (empty($cursoAtivoDetalhes['modulos'])): ?>
+                                        <div class="p-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 space-y-2">
+                                            <p class="text-xs font-bold text-slate-700">Este curso ainda não possui módulos cadastrados.</p>
+                                            <p class="text-[11px] text-slate-500">Crie o primeiro módulo para começar a publicar as aulas.</p>
+                                            <button onclick="abrirModalModulo(<?php echo $cursoAtivoDetalhes['id']; ?>)" class="mt-2 px-4 py-2 bg-[#0D5BA8] text-white font-bold text-xs rounded-xl shadow-xs">
+                                                Adicionar Módulo 01
+                                            </button>
+                                        </div>
+                                    <?php else: ?>
+                                        <?php foreach ($cursoAtivoDetalhes['modulos'] as $idx => $mod): ?>
+                                            <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50">
+                                                <!-- Cabeçalho do Módulo -->
+                                                <div class="p-4 bg-white border-b border-slate-100 flex items-center justify-between gap-4">
+                                                    <div class="flex items-center gap-3">
+                                                        <span class="w-7 h-7 rounded-full bg-blue-100 text-[#0D5BA8] font-black text-xs flex items-center justify-center shrink-0">
+                                                            <?php echo str_pad($idx + 1, 2, '0', STR_PAD_LEFT); ?>
+                                                        </span>
+                                                        <div>
+                                                            <h4 class="font-heading font-bold text-sm text-slate-900"><?php echo htmlspecialchars($mod['titulo']); ?></h4>
+                                                            <p class="text-[11px] text-slate-400"><?php echo count($mod['aulas']); ?> aulas cadastradas</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center gap-2">
+                                                        <button onclick="abrirModalAula(<?php echo $cursoAtivoDetalhes['id']; ?>, <?php echo $mod['id']; ?>)" class="px-3 py-1.5 bg-[#FF8A00]/10 hover:bg-[#FF8A00] text-[#FF8A00] hover:text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1">
+                                                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                                            <span>Nova Aula</span>
+                                                        </button>
+                                                        <button onclick='editarModulo(<?php echo json_encode($mod); ?>)' class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg" title="Editar Módulo">
+                                                            <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                                        </button>
+                                                        <form method="POST" action="dashboard.php" class="inline" onsubmit="return confirm('Deseja excluir este módulo e todas as suas aulas?')">
+                                                            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                                                            <input type="hidden" name="action" value="excluir_modulo">
+                                                            <input type="hidden" name="id" value="<?php echo $mod['id']; ?>">
+                                                            <input type="hidden" name="curso_id" value="<?php echo $cursoAtivoDetalhes['id']; ?>">
+                                                            <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg" title="Excluir Módulo">
+                                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Lista de Aulas do Módulo -->
+                                                <div class="p-4 space-y-2">
+                                                    <?php if (empty($mod['aulas'])): ?>
+                                                        <p class="text-[11px] text-slate-400 italic py-2 text-center">Nenhuma aula cadastrada neste módulo ainda.</p>
+                                                    <?php else: ?>
+                                                        <?php foreach ($mod['aulas'] as $aIdx => $aula): ?>
+                                                            <div class="p-3 bg-white rounded-xl border border-slate-200/80 hover:border-[#0D5BA8] flex items-center justify-between gap-3 shadow-2xs transition-all">
+                                                                <div class="flex items-center gap-3 min-w-0">
+                                                                    <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                                                                        <?php if ($aula['tipo_video'] === 'youtube' || $aula['tipo_video'] === 'upload'): ?>
+                                                                            <i data-lucide="play" class="w-3.5 h-3.5 text-rose-500 fill-rose-500"></i>
+                                                                        <?php else: ?>
+                                                                            <i data-lucide="file-text" class="w-3.5 h-3.5 text-[#0D5BA8]"></i>
+                                                                        <?php endif; ?>
+                                                                    </div>
+                                                                    <div class="min-w-0">
+                                                                        <div class="flex items-center gap-2">
+                                                                            <h5 class="font-bold text-xs text-slate-900 truncate"><?php echo htmlspecialchars($aula['titulo']); ?></h5>
+                                                                            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold <?php echo ($aula['status'] === 'publicado') ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'; ?>">
+                                                                                <?php echo ucfirst($aula['status']); ?>
+                                                                            </span>
+                                                                        </div>
+                                                                        <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-0.5">
+                                                                            <?php if ($aula['duracao_minutos'] > 0): ?>
+                                                                                <span>⏱ <?php echo $aula['duracao_minutos']; ?> min</span>
+                                                                            <?php endif; ?>
+                                                                            <?php if (!empty($aula['anexos'])): ?>
+                                                                                <span class="text-blue-600 font-bold">📎 <?php echo count($aula['anexos']); ?> anexo(s)</span>
+                                                                            <?php endif; ?>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="flex items-center gap-1 shrink-0">
+                                                                    <button onclick='editarAula(<?php echo json_encode($aula); ?>, <?php echo $cursoAtivoDetalhes['id']; ?>)' class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors flex items-center gap-1">
+                                                                        <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                                                        <span>Editar</span>
+                                                                    </button>
+                                                                    <form method="POST" action="dashboard.php" class="inline" onsubmit="return confirm('Deseja excluir esta aula?')">
+                                                                        <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                                                                        <input type="hidden" name="action" value="excluir_aula">
+                                                                        <input type="hidden" name="id" value="<?php echo $aula['id']; ?>">
+                                                                        <input type="hidden" name="curso_id" value="<?php echo $cursoAtivoDetalhes['id']; ?>">
+                                                                        <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg" title="Excluir Aula">
+                                                                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
-                <?php endif; ?>
+
+                </div>
+
             </div>
         <?php endif; ?>
 
@@ -1790,6 +2229,367 @@ require_once ROOT_PATH . '/components/common/logo.php';
     </div>
 </div>
 
+<!-- ==================================================================== -->
+<!-- 1. MODAL CRUD TRILHA DE APRENDIZADO -->
+<!-- ==================================================================== -->
+<div id="modal-trilha-crud" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[95vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 text-[#0D5BA8] flex items-center justify-center">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                </div>
+                <h3 id="modal-trilha-title" class="font-heading font-bold text-lg text-slate-900">Nova Trilha de Aprendizado</h3>
+            </div>
+            <button onclick="fecharModal('modal-trilha-crud')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
+        </div>
+
+        <form method="POST" action="dashboard.php" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+            <input type="hidden" name="action" value="salvar_trilha">
+            <input type="hidden" id="trilha_id" name="id" value="">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Título da Trilha *</label>
+                <input type="text" id="trilha_titulo" name="titulo" required placeholder="Ex: Trilha de Mapeamento & Audiovisual" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Eixo / Área Temática</label>
+                    <input type="text" id="trilha_eixo" name="eixo" placeholder="Ex: Comunicação Comunitária" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Carga Horária Estimada</label>
+                    <input type="text" id="trilha_carga_horaria" name="carga_horaria" placeholder="Ex: 40 horas" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Descrição da Trilha</label>
+                <textarea id="trilha_descricao" name="descricao" rows="3" placeholder="Objetivos formativos e competências desenvolvidas nesta trilha..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Ordem de Exibição</label>
+                    <input type="number" id="trilha_ordem" name="ordem" value="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                    <select id="trilha_status" name="status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                        <option value="ativo">Ativo (Público)</option>
+                        <option value="rascunho">Rascunho</option>
+                        <option value="inativo">Inativo / Oculto</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="fecharModal('modal-trilha-crud')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancelar</button>
+                <button type="submit" class="px-6 py-2.5 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white rounded-xl text-xs font-bold shadow-md">Salvar Trilha</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- 2. MODAL CRUD CURSO -->
+<!-- ==================================================================== -->
+<div id="modal-curso-crud" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[95vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-orange-50 text-[#FF8A00] flex items-center justify-center">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                </div>
+                <h3 id="modal-curso-title" class="font-heading font-bold text-lg text-slate-900">Novo Curso</h3>
+            </div>
+            <button onclick="fecharModal('modal-curso-crud')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
+        </div>
+
+        <form method="POST" action="dashboard.php" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+            <input type="hidden" name="action" value="salvar_curso">
+            <input type="hidden" id="curso_id" name="id" value="">
+            <input type="hidden" id="curso_capa_atual" name="capa_atual" value="">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Trilha de Aprendizado Vinculada</label>
+                <select id="curso_trilha_id" name="trilha_id" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                    <option value="">-- Sem Trilha (Curso Avulso / Independente) --</option>
+                    <?php foreach ($trilhasLMS as $tr): ?>
+                        <option value="<?php echo $tr['id']; ?>"><?php echo htmlspecialchars($tr['titulo']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Título do Curso *</label>
+                <input type="text" id="curso_titulo" name="titulo" required placeholder="Ex: Fotografia Documental e Cartografia Afetiva" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Professor / Facilitador</label>
+                    <input type="text" id="curso_professor_nome" name="professor_nome" value="FotoCidade DF" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Carga Horária (ex: 14h)</label>
+                    <input type="text" id="curso_carga_horaria" name="carga_horaria" placeholder="Ex: 14 horas" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Descrição / Ementa do Curso</label>
+                <textarea id="curso_descricao" name="descricao" rows="3" placeholder="Apresentação do curso, metodologia e o que os alunos vão produzir..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"></textarea>
+            </div>
+
+            <!-- Upload da Imagem de Capa do Curso -->
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                <img id="curso_capa_preview" src="assets/images/oficina-olhar-fercal.jpg" class="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-2xs shrink-0" />
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Capa do Curso (Upload)</label>
+                    <input type="file" name="capa_arquivo" accept="image/*" onchange="previewCursoCapa(this)" class="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#FF8A00] file:text-white cursor-pointer">
+                    <p class="text-[10px] text-slate-400 mt-1">Salvo em <code class="font-mono bg-slate-100 px-1 py-0.5 rounded text-amber-600">/public/cursos/</code></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Ordem</label>
+                    <input type="number" id="curso_ordem" name="ordem" value="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                    <select id="curso_status" name="status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                        <option value="ativo">Ativo (Publicado)</option>
+                        <option value="rascunho">Rascunho</option>
+                        <option value="inativo">Inativo</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="fecharModal('modal-curso-crud')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancelar</button>
+                <button type="submit" class="px-6 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white rounded-xl text-xs font-bold shadow-md">Salvar Curso</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- 3. MODAL CRUD MÓDULO -->
+<!-- ==================================================================== -->
+<div id="modal-modulo-crud" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 text-[#0D5BA8] flex items-center justify-center">
+                    <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                </div>
+                <h3 id="modal-modulo-title" class="font-heading font-bold text-lg text-slate-900">Novo Módulo</h3>
+            </div>
+            <button onclick="fecharModal('modal-modulo-crud')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
+        </div>
+
+        <form method="POST" action="dashboard.php" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+            <input type="hidden" name="action" value="salvar_modulo">
+            <input type="hidden" id="modulo_id" name="id" value="">
+            <input type="hidden" id="modulo_curso_id" name="curso_id" value="">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Título do Módulo *</label>
+                <input type="text" id="modulo_titulo" name="titulo" required placeholder="Ex: Módulo 01 - Introdução e Enquadramento" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Descrição Curta (Opcional)</label>
+                <textarea id="modulo_descricao" name="descricao" rows="2" placeholder="Resumo dos objetivos deste módulo..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Ordem do Módulo</label>
+                <input type="number" id="modulo_ordem" name="ordem" value="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="fecharModal('modal-modulo-crud')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancelar</button>
+                <button type="submit" class="px-6 py-2.5 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white rounded-xl text-xs font-bold shadow-md">Salvar Módulo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- 4. MODAL CRUD AULA (EDITOR RICO ESTILO WORDPRESS - Referência: image_f0a333.jpg) -->
+<!-- ==================================================================== -->
+<div id="modal-aula-crud" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[96vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-orange-50 text-[#FF8A00] flex items-center justify-center">
+                    <i data-lucide="video" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 id="modal-aula-title" class="font-heading font-bold text-lg text-slate-900">Editar Aula</h3>
+                    <p class="text-[11px] text-slate-400">Editor visual estilo WordPress com formatação, vídeos e anexos.</p>
+                </div>
+            </div>
+            <button onclick="fecharModal('modal-aula-crud')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
+        </div>
+
+        <form method="POST" action="dashboard.php" enctype="multipart/form-data" onsubmit="syncAulaContent()" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+            <input type="hidden" name="action" value="salvar_aula">
+            <input type="hidden" id="aula_id" name="id" value="">
+            <input type="hidden" id="aula_curso_id" name="curso_id" value="">
+            <input type="hidden" id="aula_modulo_id" name="modulo_id" value="">
+            <textarea id="aula_conteudo_hidden" name="conteudo" class="hidden"></textarea>
+
+            <!-- Título da Aula -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Título da Aula *</label>
+                <input type="text" id="aula_titulo" name="titulo" required placeholder="Ex: Aula 01 - Luz, Sombra e Enquadramento Urbano" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900">
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- EDITOR DE CONTEÚDO RICO (WYSIWYG - Estilo WordPress) -->
+            <!-- ========================================================= -->
+            <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                <!-- Barra de Ferramentas WordPress -->
+                <div class="bg-slate-100 p-2 border-b border-slate-200 flex flex-wrap items-center justify-between gap-1.5 select-none">
+                    <div class="flex flex-wrap items-center gap-1">
+                        <!-- Headings Dropdown -->
+                        <select onchange="formatAulaBlock(this.value); this.selectedIndex=0;" class="px-2 py-1 bg-white border border-slate-300 rounded text-xs font-medium cursor-pointer">
+                            <option value="">Formato do Texto</option>
+                            <option value="p">Parágrafo Padrão</option>
+                            <option value="h1">Título 1 (H1)</option>
+                            <option value="h2">Título 2 (H2)</option>
+                            <option value="h3">Título 3 (H3)</option>
+                            <option value="blockquote">Citação (Blockquote)</option>
+                        </select>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                        <button type="button" onclick="execAulaCmd('bold')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded font-black text-xs" title="Negrito (Ctrl+B)">B</button>
+                        <button type="button" onclick="execAulaCmd('italic')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded italic font-serif text-xs" title="Itálico (Ctrl+I)">I</button>
+                        <button type="button" onclick="execAulaCmd('underline')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded underline text-xs" title="Sublinhado">U</button>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                        <button type="button" onclick="execAulaCmd('insertUnorderedList')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Lista com Marcadores">• Lista</button>
+                        <button type="button" onclick="execAulaCmd('insertOrderedList')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Lista Numerada">1. Lista</button>
+                        <button type="button" onclick="execAulaCmd('formatBlock', '<blockquote>')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs font-serif" title="Citação">❝ Citação</button>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                        <button type="button" onclick="inserirLinkAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-blue-600 font-bold" title="Inserir Link">🔗 Link</button>
+                        <button type="button" onclick="execAulaCmd('removeFormat')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-slate-500" title="Limpar Formatação">Tx</button>
+                    </div>
+
+                    <!-- Alternar Visual / HTML -->
+                    <div class="flex items-center gap-1">
+                        <button type="button" id="btn-aula-mode-visual" onclick="toggleAulaEditorMode('visual')" class="px-2.5 py-1 bg-[#0D5BA8] text-white font-bold text-xs rounded">Visual</button>
+                        <button type="button" id="btn-aula-mode-html" onclick="toggleAulaEditorMode('html')" class="px-2.5 py-1 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs rounded">Código HTML</button>
+                    </div>
+                </div>
+
+                <!-- Área Editável Visual -->
+                <div id="aula_editor_visual" contenteditable="true" class="p-4 min-h-[220px] max-h-[350px] overflow-y-auto bg-white text-slate-800 text-sm focus:outline-none leading-relaxed prose prose-slate max-w-none">
+                    <p>Digite as instruções, notas conceituais, roteiros e orientações da aula aqui...</p>
+                </div>
+
+                <!-- Área Código HTML (Oculta por padrão) -->
+                <textarea id="aula_editor_html" rows="8" class="hidden w-full p-4 font-mono text-xs text-slate-800 bg-slate-900 text-slate-100 focus:outline-none leading-relaxed"></textarea>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- CONFIGURAÇÃO DE VÍDEO DA AULA (Link ou Upload MP4) -->
+            <!-- ========================================================= -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                        <i data-lucide="play-circle" class="w-4 h-4 text-rose-500"></i>
+                        <span>Vídeo da Aula</span>
+                    </h4>
+                    <span class="text-[10px] text-slate-400">YouTube, Vimeo ou MP4 local</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Origem do Vídeo</label>
+                        <select id="aula_tipo_video" name="tipo_video" onchange="toggleVideoInputs(this.value)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
+                            <option value="youtube">YouTube (Link / Incorporar)</option>
+                            <option value="vimeo">Vimeo (Link)</option>
+                            <option value="upload">Upload de Arquivo (MP4)</option>
+                            <option value="nenhum">Sem Vídeo (Apenas Texto/Material)</option>
+                        </select>
+                    </div>
+                    
+                    <div id="box_url_video" class="sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Link do Vídeo (YouTube / Vimeo)</label>
+                        <input type="text" id="aula_url_video" name="url_video" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono">
+                    </div>
+
+                    <div id="box_upload_video" class="hidden sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Upload de Vídeo MP4 (Hospedado no Servidor)</label>
+                        <input type="file" name="video_arquivo" accept="video/mp4,video/webm" class="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-rose-500 file:text-white cursor-pointer">
+                        <p class="text-[10px] text-slate-400 mt-0.5">Salvo em <code class="font-mono bg-white px-1 py-0.5 rounded text-rose-600">/public/aulas/videos/</code></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Duração da Aula (Minutos)</label>
+                        <input type="number" id="aula_duracao_minutos" name="duracao_minutos" value="10" placeholder="Ex: 15" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Ordem da Aula</label>
+                        <input type="number" id="aula_ordem" name="ordem" value="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Status de Publicação</label>
+                        <select id="aula_status" name="status" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
+                            <option value="publicado">Publicado (Visível aos Alunos)</option>
+                            <option value="rascunho">Rascunho</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- ANEXOS & ARQUIVOS PARA DOWNLOAD (PDFs, Guias, Apostilas) -->
+            <!-- ========================================================= -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                        <i data-lucide="paperclip" class="w-4 h-4 text-[#0D5BA8]"></i>
+                        <span>Anexos & Material de Apoio para Download (PDF, DOCX, ZIP)</span>
+                    </h4>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Adicionar Novo Arquivo</label>
+                    <input type="file" name="anexo_arquivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.jpg,.png" class="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#0D5BA8] file:text-white cursor-pointer">
+                    <p class="text-[10px] text-slate-400 mt-1">Salvo automaticamente em <code class="font-mono bg-white px-1 py-0.5 rounded text-blue-600">/public/aulas/anexos/</code></p>
+                </div>
+
+                <!-- Lista de Anexos Existentes nesta Aula -->
+                <div id="aula_anexos_container" class="space-y-1 pt-2">
+                    <!-- Preenchido via Javascript se houver anexos existentes -->
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="fecharModal('modal-aula-crud')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancelar</button>
+                <button type="submit" class="px-8 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white rounded-xl text-xs font-bold shadow-md">Salvar & Publicar Aula</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function abrirModal(id) {
     const m = document.getElementById(id);
@@ -1806,6 +2606,248 @@ function fecharModal(id) {
         m.classList.add('hidden');
     }
 }
+
+// -------------------------------------------------------------
+// CONTROLE DO LMS: TRILHAS, CURSOS, MÓDULOS E AULAS
+// -------------------------------------------------------------
+function abrirModalTrilha() {
+    document.getElementById('modal-trilha-title').innerText = 'Nova Trilha de Aprendizado';
+    document.getElementById('trilha_id').value = '';
+    document.getElementById('trilha_titulo').value = '';
+    document.getElementById('trilha_eixo').value = '';
+    document.getElementById('trilha_carga_horaria').value = '40 horas';
+    document.getElementById('trilha_descricao').value = '';
+    document.getElementById('trilha_ordem').value = '0';
+    document.getElementById('trilha_status').value = 'ativo';
+    abrirModal('modal-trilha-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function editarTrilha(t) {
+    document.getElementById('modal-trilha-title').innerText = 'Editar Trilha de Aprendizado';
+    document.getElementById('trilha_id').value = t.id || '';
+    document.getElementById('trilha_titulo').value = t.titulo || '';
+    document.getElementById('trilha_eixo').value = t.eixo || '';
+    document.getElementById('trilha_carga_horaria').value = t.carga_horaria || '';
+    document.getElementById('trilha_descricao').value = t.descricao || '';
+    document.getElementById('trilha_ordem').value = t.ordem || 0;
+    document.getElementById('trilha_status').value = t.status || 'ativo';
+    abrirModal('modal-trilha-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function previewCursoCapa(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('curso_capa_preview');
+            if (preview) preview.src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function abrirModalCurso() {
+    document.getElementById('modal-curso-title').innerText = 'Novo Curso';
+    document.getElementById('curso_id').value = '';
+    document.getElementById('curso_trilha_id').value = '';
+    document.getElementById('curso_titulo').value = '';
+    document.getElementById('curso_professor_nome').value = 'FotoCidade DF';
+    document.getElementById('curso_carga_horaria').value = '14 horas';
+    document.getElementById('curso_descricao').value = '';
+    document.getElementById('curso_ordem').value = '0';
+    document.getElementById('curso_status').value = 'ativo';
+    document.getElementById('curso_capa_atual').value = '';
+    if (document.getElementById('curso_capa_preview')) {
+        document.getElementById('curso_capa_preview').src = 'assets/images/oficina-olhar-fercal.jpg';
+    }
+    abrirModal('modal-curso-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function editarCurso(c) {
+    document.getElementById('modal-curso-title').innerText = 'Editar Curso';
+    document.getElementById('curso_id').value = c.id || '';
+    document.getElementById('curso_trilha_id').value = c.trilha_id || '';
+    document.getElementById('curso_titulo').value = c.titulo || '';
+    document.getElementById('curso_professor_nome').value = c.professor_nome || 'FotoCidade DF';
+    document.getElementById('curso_carga_horaria').value = c.carga_horaria || '';
+    document.getElementById('curso_descricao').value = c.descricao || '';
+    document.getElementById('curso_ordem').value = c.ordem || 0;
+    document.getElementById('curso_status').value = c.status || 'ativo';
+    document.getElementById('curso_capa_atual').value = c.capa_url || '';
+    if (document.getElementById('curso_capa_preview')) {
+        document.getElementById('curso_capa_preview').src = c.capa_url || 'assets/images/oficina-olhar-fercal.jpg';
+    }
+    abrirModal('modal-curso-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function abrirModalModulo(cursoId) {
+    document.getElementById('modal-modulo-title').innerText = 'Novo Módulo do Curso';
+    document.getElementById('modulo_id').value = '';
+    document.getElementById('modulo_curso_id').value = cursoId;
+    document.getElementById('modulo_titulo').value = '';
+    document.getElementById('modulo_descricao').value = '';
+    document.getElementById('modulo_ordem').value = '0';
+    abrirModal('modal-modulo-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function editarModulo(m) {
+    document.getElementById('modal-modulo-title').innerText = 'Editar Módulo';
+    document.getElementById('modulo_id').value = m.id || '';
+    document.getElementById('modulo_curso_id').value = m.curso_id || '';
+    document.getElementById('modulo_titulo').value = m.titulo || '';
+    document.getElementById('modulo_descricao').value = m.descricao || '';
+    document.getElementById('modulo_ordem').value = m.ordem || 0;
+    abrirModal('modal-modulo-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function toggleVideoInputs(tipo) {
+    const boxUrl = document.getElementById('box_url_video');
+    const boxUp = document.getElementById('box_upload_video');
+    if (tipo === 'upload') {
+        if (boxUrl) boxUrl.classList.add('hidden');
+        if (boxUp) boxUp.classList.remove('hidden');
+    } else if (tipo === 'nenhum') {
+        if (boxUrl) boxUrl.classList.add('hidden');
+        if (boxUp) boxUp.classList.add('hidden');
+    } else {
+        if (boxUrl) boxUrl.classList.remove('hidden');
+        if (boxUp) boxUp.classList.add('hidden');
+    }
+}
+
+// -------------------------------------------------------------
+// FUNÇÕES DO EDITOR RICO DE AULA ESTILO WORDPRESS
+// -------------------------------------------------------------
+function execAulaCmd(command, value = null) {
+    document.execCommand(command, false, value);
+    document.getElementById('aula_editor_visual').focus();
+}
+
+function formatAulaBlock(tag) {
+    if (tag) {
+        document.execCommand('formatBlock', false, tag);
+        document.getElementById('aula_editor_visual').focus();
+    }
+}
+
+function inserirLinkAula() {
+    const url = prompt('Digite o endereço do Link (URL):', 'https://');
+    if (url) {
+        document.execCommand('createLink', false, url);
+    }
+}
+
+let isAulaHtmlMode = false;
+function toggleAulaEditorMode(mode) {
+    const visualArea = document.getElementById('aula_editor_visual');
+    const htmlArea = document.getElementById('aula_editor_html');
+    const btnVisual = document.getElementById('btn-aula-mode-visual');
+    const btnHtml = document.getElementById('btn-aula-mode-html');
+
+    if (mode === 'html' && !isAulaHtmlMode) {
+        htmlArea.value = visualArea.innerHTML;
+        visualArea.classList.add('hidden');
+        htmlArea.classList.remove('hidden');
+        btnHtml.classList.add('bg-[#0D5BA8]', 'text-white');
+        btnHtml.classList.remove('bg-slate-200', 'text-slate-700');
+        btnVisual.classList.remove('bg-[#0D5BA8]', 'text-white');
+        btnVisual.classList.add('bg-slate-200', 'text-slate-700');
+        isAulaHtmlMode = true;
+    } else if (mode === 'visual' && isAulaHtmlMode) {
+        visualArea.innerHTML = htmlArea.value;
+        htmlArea.classList.add('hidden');
+        visualArea.classList.remove('hidden');
+        btnVisual.classList.add('bg-[#0D5BA8]', 'text-white');
+        btnVisual.classList.remove('bg-slate-200', 'text-slate-700');
+        btnHtml.classList.remove('bg-[#0D5BA8]', 'text-white');
+        btnHtml.classList.add('bg-slate-200', 'text-slate-700');
+        isAulaHtmlMode = false;
+    }
+}
+
+function syncAulaContent() {
+    if (isAulaHtmlMode) {
+        document.getElementById('aula_conteudo_hidden').value = document.getElementById('aula_editor_html').value;
+    } else {
+        document.getElementById('aula_conteudo_hidden').value = document.getElementById('aula_editor_visual').innerHTML;
+    }
+}
+
+function abrirModalAula(cursoId, moduloId) {
+    document.getElementById('modal-aula-title').innerText = 'Nova Aula';
+    document.getElementById('aula_id').value = '';
+    document.getElementById('aula_curso_id').value = cursoId;
+    document.getElementById('aula_modulo_id').value = moduloId;
+    document.getElementById('aula_titulo').value = '';
+    document.getElementById('aula_editor_visual').innerHTML = '<p>Digite o roteiro e o conteúdo pedagógico desta aula...</p>';
+    document.getElementById('aula_editor_html').value = '';
+    document.getElementById('aula_tipo_video').value = 'youtube';
+    toggleVideoInputs('youtube');
+    document.getElementById('aula_url_video').value = '';
+    document.getElementById('aula_duracao_minutos').value = '10';
+    document.getElementById('aula_ordem').value = '0';
+    document.getElementById('aula_status').value = 'publicado';
+    document.getElementById('aula_anexos_container').innerHTML = '';
+    toggleAulaEditorMode('visual');
+    abrirModal('modal-aula-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function editarAula(a, cursoId) {
+    document.getElementById('modal-aula-title').innerText = 'Editar Aula';
+    document.getElementById('aula_id').value = a.id || '';
+    document.getElementById('aula_curso_id').value = cursoId;
+    document.getElementById('aula_modulo_id').value = a.modulo_id || '';
+    document.getElementById('aula_titulo').value = a.titulo || '';
+    
+    const content = a.conteudo || '<p></p>';
+    document.getElementById('aula_editor_visual').innerHTML = content;
+    document.getElementById('aula_editor_html').value = content;
+    
+    const tipoVid = a.tipo_video || (a.url_video ? 'youtube' : 'nenhum');
+    document.getElementById('aula_tipo_video').value = tipoVid;
+    toggleVideoInputs(tipoVid);
+    document.getElementById('aula_url_video').value = a.url_video || '';
+    document.getElementById('aula_duracao_minutos').value = a.duracao_minutos || 10;
+    document.getElementById('aula_ordem').value = a.ordem || 0;
+    document.getElementById('aula_status').value = a.status || 'publicado';
+
+    // Lista de anexos existentes
+    const anxContainer = document.getElementById('aula_anexos_container');
+    anxContainer.innerHTML = '';
+    if (a.anexos && a.anexos.length > 0) {
+        a.anexos.forEach(anx => {
+            const item = document.createElement('div');
+            item.className = 'flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 text-xs';
+            item.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-blue-600 font-bold">📄</span>
+                    <a href="${anx.url_arquivo}" target="_blank" class="font-medium text-slate-800 hover:underline truncate max-w-xs">${anx.nome_arquivo}</a>
+                </div>
+                <form method="POST" action="dashboard.php" class="inline" onsubmit="return confirm('Deseja excluir este anexo?')">
+                    <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                    <input type="hidden" name="action" value="excluir_anexo">
+                    <input type="hidden" name="anexo_id" value="${anx.id}">
+                    <input type="hidden" name="curso_id" value="${cursoId}">
+                    <button type="submit" class="p-1 text-rose-500 hover:bg-rose-50 rounded" title="Excluir Anexo">
+                        ✕
+                    </button>
+                </form>
+            `;
+            anxContainer.appendChild(item);
+        });
+    }
+
+    toggleAulaEditorMode('visual');
+    abrirModal('modal-aula-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
 
 const bancoBairrosPorCidade = {
     'Brasília/DF': [

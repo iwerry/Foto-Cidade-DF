@@ -293,5 +293,110 @@ function upload_vitrine_media($fileArray, $tituloPost, $id = 0) {
     return ['success' => false, 'message' => 'Falha ao mover arquivo enviado para /public/vitrine/'];
 }
 
+/**
+ * Processa upload de capa de curso salvando em /public/cursos/{titulo_sanitizado}_{id}.ext
+ */
+function upload_curso_capa($fileArray, $tituloCurso, $id = 0) {
+    if (!isset($fileArray) || $fileArray['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'Nenhum arquivo enviado ou erro no upload.'];
+    }
 
+    $targetDir = ROOT_PATH . '/public/cursos';
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0755, true);
+    }
 
+    $ext = pathinfo($fileArray['name'], PATHINFO_EXTENSION);
+    $ext = strtolower($ext ?: 'jpg');
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
+        $ext = 'jpg';
+    }
+
+    $tituloSanitizado = sanitize_file_name($tituloCurso);
+    $filename = $tituloSanitizado . '_' . ($id ?: time()) . '.' . $ext;
+    $targetPath = $targetDir . '/' . $filename;
+    $relativePath = 'public/cursos/' . $filename;
+
+    if (move_uploaded_file($fileArray['tmp_name'], $targetPath)) {
+        return [
+            'success' => true,
+            'path' => $relativePath,
+            'filename' => $filename,
+            'message' => 'Capa do curso salva em /public/cursos/ com sucesso!'
+        ];
+    }
+
+    return ['success' => false, 'message' => 'Falha ao salvar capa do curso em /public/cursos/'];
+}
+
+/**
+ * Processa upload de vídeo direto de aula salvando em /public/aulas/videos/{titulo_sanitizado}_{id}.mp4
+ */
+function upload_aula_video($fileArray, $tituloAula, $id = 0) {
+    if (!isset($fileArray) || $fileArray['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'Nenhum vídeo enviado ou erro no upload.'];
+    }
+
+    $targetDir = ROOT_PATH . '/public/aulas/videos';
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0755, true);
+    }
+
+    $ext = pathinfo($fileArray['name'], PATHINFO_EXTENSION);
+    $ext = strtolower($ext ?: 'mp4');
+    if (!in_array($ext, ['mp4', 'webm', 'mov', 'm4v'])) {
+        $ext = 'mp4';
+    }
+
+    $tituloSanitizado = sanitize_file_name($tituloAula);
+    $filename = $tituloSanitizado . '_' . ($id ?: time()) . '.' . $ext;
+    $targetPath = $targetDir . '/' . $filename;
+    $relativePath = 'public/aulas/videos/' . $filename;
+
+    if (move_uploaded_file($fileArray['tmp_name'], $targetPath)) {
+        return [
+            'success' => true,
+            'path' => $relativePath,
+            'filename' => $filename,
+            'message' => 'Vídeo da aula salvo em /public/aulas/videos/ com sucesso!'
+        ];
+    }
+
+    return ['success' => false, 'message' => 'Falha ao salvar vídeo em /public/aulas/videos/'];
+}
+
+/**
+ * Processa upload de anexo/material de apoio da aula salvando em /public/aulas/anexos/{nome_sanitizado}
+ */
+function upload_aula_anexo($fileArray, $tituloAula, $id = 0) {
+    if (!isset($fileArray) || $fileArray['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'Nenhum anexo enviado ou erro no upload.'];
+    }
+
+    $targetDir = ROOT_PATH . '/public/aulas/anexos';
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0755, true);
+    }
+
+    $origName = pathinfo($fileArray['name'], PATHINFO_FILENAME);
+    $ext = pathinfo($fileArray['name'], PATHINFO_EXTENSION);
+    $ext = strtolower($ext ?: 'pdf');
+
+    $nomeSanitizado = sanitize_file_name($origName);
+    $filename = $nomeSanitizado . '_' . ($id ?: time()) . '.' . $ext;
+    $targetPath = $targetDir . '/' . $filename;
+    $relativePath = 'public/aulas/anexos/' . $filename;
+
+    if (move_uploaded_file($fileArray['tmp_name'], $targetPath)) {
+        return [
+            'success' => true,
+            'path' => $relativePath,
+            'nomeOriginal' => $fileArray['name'],
+            'filename' => $filename,
+            'tamanho' => $fileArray['size'] ?? 0,
+            'message' => 'Material complementar salvo com sucesso!'
+        ];
+    }
+
+    return ['success' => false, 'message' => 'Falha ao salvar anexo em /public/aulas/anexos/'];
+}

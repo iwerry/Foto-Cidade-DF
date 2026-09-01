@@ -110,71 +110,99 @@ CREATE TABLE IF NOT EXISTS `talentos` (
     `criado_em` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. TABELA DE EIXOS DA TRILHA / CURSOS (Estilo Moodle)
-CREATE TABLE IF NOT EXISTS `trilhas_eixos` (
+-- 6. TABELA DE TRILHAS FORMATIVAS (trilhas_cursos)
+CREATE TABLE IF NOT EXISTS `trilhas_cursos` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `numero_eixo` INT NOT NULL UNIQUE,
-    `titulo` VARCHAR(150) NOT NULL,
-    `subtitulo` VARCHAR(255) DEFAULT NULL,
-    `carga_horaria` VARCHAR(30) NOT NULL DEFAULT '20 Horas',
-    `cor` VARCHAR(30) DEFAULT '#0D5BA8',
-    `icone` VARCHAR(40) DEFAULT 'compass',
+    `titulo` VARCHAR(255) NOT NULL,
     `descricao` TEXT,
-    `ordem` INT DEFAULT 1,
-    `ativo` TINYINT(1) DEFAULT 1,
-    `criado_em` DATETIME DEFAULT CURRENT_TIMESTAMP
+    `eixo` VARCHAR(100) DEFAULT NULL,
+    `carga_horaria` VARCHAR(50) DEFAULT NULL,
+    `ordem` INT DEFAULT 0,
+    `status` ENUM('ativo', 'inativo', 'rascunho') DEFAULT 'ativo',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. TABELA DE MISSÕES / CAPÍTULOS DA TRILHA
-CREATE TABLE IF NOT EXISTS `trilhas_missoes` (
+-- 7. TABELA DE CURSOS (Vinculados a uma Trilha)
+CREATE TABLE IF NOT EXISTS `cursos` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `eixo_id` INT NOT NULL,
-    `numero_missao` INT NOT NULL,
-    `titulo` VARCHAR(180) NOT NULL,
-    `descricao_curta` VARCHAR(255) NOT NULL,
-    `descricao_completa` TEXT NOT NULL,
-    `duracao_horas` INT DEFAULT 4,
-    `prazo` VARCHAR(60) DEFAULT NULL,
-    `entregas_requeridas` TEXT,
-    `ordem` INT DEFAULT 1,
-    `ativo` TINYINT(1) DEFAULT 1,
-    `criado_em` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`eixo_id`) REFERENCES `trilhas_eixos`(`id`) ON DELETE CASCADE
+    `trilha_id` INT NULL,
+    `titulo` VARCHAR(255) NOT NULL,
+    `descricao` TEXT,
+    `capa_url` VARCHAR(255) DEFAULT NULL,
+    `carga_horaria` VARCHAR(50) DEFAULT NULL,
+    `professor_nome` VARCHAR(150) DEFAULT 'FotoCidade DF',
+    `ordem` INT DEFAULT 0,
+    `status` ENUM('ativo', 'inativo', 'rascunho') DEFAULT 'rascunho',
+    `data_criacao` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`trilha_id`) REFERENCES `trilhas_cursos`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. TABELA DE PROGRESSO DO ALUNO (Inscrições e Entregas)
-CREATE TABLE IF NOT EXISTS `progresso_aluno` (
+-- 8. TABELA DE MÓDULOS (Dentro de cada Curso)
+CREATE TABLE IF NOT EXISTS `modulos` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `curso_id` INT NOT NULL,
+    `titulo` VARCHAR(255) NOT NULL,
+    `descricao` TEXT DEFAULT NULL,
+    `ordem` INT DEFAULT 0,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`curso_id`) REFERENCES `cursos`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. TABELA DE AULAS (Com Conteúdo Rico, Vídeos e Status)
+CREATE TABLE IF NOT EXISTS `aulas` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `modulo_id` INT NOT NULL,
+    `titulo` VARCHAR(255) NOT NULL,
+    `conteudo` LONGTEXT,
+    `tipo_video` ENUM('youtube', 'vimeo', 'upload', 'nenhum') DEFAULT 'nenhum',
+    `url_video` VARCHAR(255) DEFAULT NULL,
+    `duracao_minutos` INT DEFAULT 0,
+    `ordem` INT DEFAULT 0,
+    `status` ENUM('publicado', 'rascunho') DEFAULT 'publicado',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`modulo_id`) REFERENCES `modulos`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. TABELA DE ANEXOS / DOWNLOADS DAS AULAS (PDFs, Planilhas, Documentos)
+CREATE TABLE IF NOT EXISTS `anexos_aulas` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `aula_id` INT NOT NULL,
+    `nome_arquivo` VARCHAR(255) NOT NULL,
+    `url_arquivo` VARCHAR(255) NOT NULL,
+    `tamanho_bytes` INT DEFAULT 0,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`aula_id`) REFERENCES `aulas`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. TABELAS DE QUIZZES (Opcional)
+CREATE TABLE IF NOT EXISTS `quizzes` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `aula_id` INT NULL,
+    `modulo_id` INT NULL,
+    `titulo` VARCHAR(255) NOT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `quiz_perguntas` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `quiz_id` INT NOT NULL,
+    `pergunta` TEXT NOT NULL,
+    `opcoes` LONGTEXT NOT NULL,
+    `resposta_correta` VARCHAR(255) NOT NULL,
+    FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. TABELA DE PROGRESSO DO ALUNO NAS AULAS
+CREATE TABLE IF NOT EXISTS `progresso_aluno_aulas` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `aluno_id` INT NOT NULL,
-    `missao_id` INT NOT NULL,
-    `status` ENUM('bloqueado', 'em_andamento', 'concluido') NOT NULL DEFAULT 'em_andamento',
-    `trabalho_titulo` VARCHAR(200) DEFAULT NULL,
-    `trabalho_descricao` TEXT,
-    `trabalho_arquivo` VARCHAR(255) DEFAULT NULL,
-    `feedback` TEXT,
-    `data_submissao` DATETIME DEFAULT NULL,
-    `data_conclusao` DATETIME DEFAULT NULL,
+    `aula_id` INT NOT NULL,
+    `concluida` TINYINT(1) DEFAULT 1,
+    `data_conclusao` DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`aluno_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`missao_id`) REFERENCES `trilhas_missoes`(`id`) ON DELETE CASCADE,
-    UNIQUE KEY `uk_aluno_missao` (`aluno_id`, `missao_id`)
+    FOREIGN KEY (`aula_id`) REFERENCES `aulas`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uk_aluno_aula` (`aluno_id`, `aula_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. TABELA DE INSÍGNIAS E SELOS DE RECONHECIMENTO
-CREATE TABLE IF NOT EXISTS `selos` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `titulo` VARCHAR(100) NOT NULL,
-    `descricao` VARCHAR(255) NOT NULL,
-    `icone` VARCHAR(40) DEFAULT 'award',
-    `cor` VARCHAR(40) DEFAULT 'bg-cyan-500'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `aluno_selos` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `aluno_id` INT NOT NULL,
-    `selo_id` INT NOT NULL,
-    `data_conquista` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`aluno_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`selo_id`) REFERENCES `selos`(`id`) ON DELETE CASCADE,
-    UNIQUE KEY `uk_aluno_selo` (`aluno_id`, `selo_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
