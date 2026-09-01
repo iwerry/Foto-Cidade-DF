@@ -84,45 +84,144 @@ function get_user_profile($userId = null) {
 }
 
 /**
- * Obtém todos os itens da Vitrine Cultural
+ * Garante que a tabela `posts` / `vitrine` exista com todas as colunas necessárias para blog/mídias
+ */
+function ensure_vitrine_and_posts_columns($pdo) {
+    static $checked = false;
+    if ($checked || !$pdo) return;
+    $checked = true;
+
+    try {
+        $tableVitrine = get_existing_table_name($pdo, 'posts', 'vitrine');
+        if (empty($tableVitrine)) {
+            $tableVitrine = 'posts';
+        }
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$tableVitrine}` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `tipo` VARCHAR(60) NOT NULL DEFAULT 'Foto',
+            `titulo` VARCHAR(255) NOT NULL,
+            `subtitulo` VARCHAR(255) DEFAULT NULL,
+            `descricao` TEXT NOT NULL,
+            `conteudo` LONGTEXT DEFAULT NULL,
+            `autor_id` INT DEFAULT NULL,
+            `autor_nome` VARCHAR(150) NOT NULL DEFAULT 'FotoCidade DF',
+            `autor_avatar` VARCHAR(255) DEFAULT 'assets/images/avatar-default.jpg',
+            `autor_role` VARCHAR(100) DEFAULT 'Administrador',
+            `bairro` VARCHAR(150) NOT NULL DEFAULT 'Sobradinho',
+            `cidade` VARCHAR(150) DEFAULT 'Brasília/DF',
+            `imagem` VARCHAR(255) DEFAULT NULL,
+            `media_url` VARCHAR(255) DEFAULT NULL,
+            `thumbnail_url` VARCHAR(255) DEFAULT NULL,
+            `video_url` VARCHAR(255) DEFAULT NULL,
+            `audio_url` VARCHAR(255) DEFAULT NULL,
+            `tags` VARCHAR(255) DEFAULT 'Foto',
+            `likes` INT DEFAULT 0,
+            `compartilhamentos` INT DEFAULT 0,
+            `destaque` TINYINT(1) DEFAULT 0,
+            `ativo` TINYINT(1) DEFAULT 1,
+            `criado_em` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX `idx_post_tipo` (`tipo`),
+            INDEX `idx_post_bairro` (`bairro`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        // Verifica e adiciona colunas caso a tabela já existisse de forma simplificada
+        $stmtCols = $pdo->query("SHOW COLUMNS FROM `{$tableVitrine}`");
+        $existingCols = $stmtCols->fetchAll(PDO::FETCH_COLUMN);
+
+        $neededCols = [
+            'tipo' => "VARCHAR(60) NOT NULL DEFAULT 'Foto'",
+            'titulo' => "VARCHAR(255) NOT NULL",
+            'subtitulo' => "VARCHAR(255) DEFAULT NULL",
+            'descricao' => "TEXT NOT NULL",
+            'conteudo' => "LONGTEXT DEFAULT NULL",
+            'autor_id' => "INT DEFAULT NULL",
+            'autor_nome' => "VARCHAR(150) NOT NULL DEFAULT 'FotoCidade DF'",
+            'autor_avatar' => "VARCHAR(255) DEFAULT 'assets/images/avatar-default.jpg'",
+            'autor_role' => "VARCHAR(100) DEFAULT 'Administrador'",
+            'bairro' => "VARCHAR(150) NOT NULL DEFAULT 'Sobradinho'",
+            'cidade' => "VARCHAR(150) DEFAULT 'Brasília/DF'",
+            'imagem' => "VARCHAR(255) DEFAULT NULL",
+            'media_url' => "VARCHAR(255) DEFAULT NULL",
+            'thumbnail_url' => "VARCHAR(255) DEFAULT NULL",
+            'video_url' => "VARCHAR(255) DEFAULT NULL",
+            'audio_url' => "VARCHAR(255) DEFAULT NULL",
+            'tags' => "VARCHAR(255) DEFAULT 'Foto'",
+            'likes' => "INT DEFAULT 0",
+            'compartilhamentos' => "INT DEFAULT 0",
+            'destaque' => "TINYINT(1) DEFAULT 0",
+            'ativo' => "TINYINT(1) DEFAULT 1",
+            'criado_em' => "DATETIME DEFAULT CURRENT_TIMESTAMP",
+            'created_at' => "DATETIME DEFAULT CURRENT_TIMESTAMP",
+            'updated_at' => "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        ];
+
+        foreach ($neededCols as $colName => $colDef) {
+            if (!in_array($colName, $existingCols)) {
+                try {
+                    $pdo->exec("ALTER TABLE `{$tableVitrine}` ADD COLUMN `{$colName}` {$colDef}");
+                } catch (Exception $eCol) {}
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Ensure Vitrine / Posts error: " . $e->getMessage());
+    }
+}
+
+/**
+ * Obtém todos os itens da Vitrine Cultural a partir do banco de dados MySQL
  */
 function get_vitrine() {
     $pdo = get_db_connection();
     if ($pdo) {
         try {
-            $tableVitrine = get_existing_table_name($pdo, 'vitrine', 'posts');
-            $stmt = $pdo->query("SELECT * FROM `{$tableVitrine}` ORDER BY id DESC");
+            ensure_vitrine_and_posts_columns($pdo);
+            $tableVitrine = get_existing_table_name($pdo, 'posts', 'vitrine');
+            
+            $stmt = $pdo->query("SELECT * FROM `{$tableVitrine}` WHERE `ativo` = 1 ORDER BY id DESC");
             $rows = $stmt->fetchAll();
+            $items = [];
             if (!empty($rows)) {
-                $items = [];
                 foreach ($rows as $r) {
                     $tagsArray = !empty($r['tags']) ? array_map('trim', explode(',', $r['tags'])) : ['Foto'];
+                    $mediaUrl = !empty($r['media_url']) ? $r['media_url'] : (!empty($r['imagem']) ? $r['imagem'] : (!empty($r['thumbnail_url']) ? $r['thumbnail_url'] : 'assets/images/oficina-olhar-fercal.jpg'));
+                    $thumbUrl = !empty($r['thumbnail_url']) ? $r['thumbnail_url'] : $mediaUrl;
+                    $autorAvt = !empty($r['autor_avatar']) ? $r['autor_avatar'] : 'assets/images/avatar-default.jpg';
+
                     $items[] = [
-                        'id' => $r['id'],
+                        'id' => (int)$r['id'],
                         'tipo' => $r['tipo'] ?? 'Foto',
                         'titulo' => $r['titulo'],
                         'subtitulo' => $r['subtitulo'] ?? '',
                         'descricao' => $r['descricao'] ?? '',
-                        'autorNome' => $r['autor_nome'] ?? ($r['autor'] ?? 'Aluno FotoCidade'),
-                        'autorAvatar' => $r['autor_avatar'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-                        'autorRole' => $r['autor_role'] ?? 'Aluno',
+                        'conteudo' => $r['conteudo'] ?? '',
+                        'autorNome' => $r['autor_nome'] ?? 'FotoCidade DF',
+                        'autorAvatar' => $autorAvt,
+                        'autorRole' => $r['autor_role'] ?? 'Administrador',
                         'bairro' => $r['bairro'] ?? 'Sobradinho',
-                        'mediaUrl' => $r['media_url'] ?? ($r['imagem'] ?? 'assets/images/oficina-olhar-fercal.jpg'),
-                        'thumbnailUrl' => $r['thumbnail_url'] ?? ($r['media_url'] ?? 'assets/images/oficina-olhar-fercal.jpg'),
-                        'dataPublicacao' => date('d/m/Y', strtotime($r['criado_em'] ?? 'now')),
+                        'cidade' => $r['cidade'] ?? 'Brasília/DF',
+                        'mediaUrl' => $mediaUrl,
+                        'imagem' => $mediaUrl,
+                        'thumbnailUrl' => $thumbUrl,
+                        'videoUrl' => $r['video_url'] ?? '',
+                        'audioUrl' => $r['audio_url'] ?? '',
+                        'dataPublicacao' => date('d/m/Y', strtotime($r['criado_em'] ?? ($r['created_at'] ?? 'now'))),
                         'likes' => (int)($r['likes'] ?? 0),
                         'compartilhamentos' => (int)($r['compartilhamentos'] ?? 0),
+                        'destaque' => isset($r['destaque']) && $r['destaque'] ? true : false,
                         'tags' => $tagsArray
                     ];
                 }
-                return $items;
             }
+            return $items;
         } catch (Exception $e) {
             error_log("DB get_vitrine error: " . $e->getMessage());
         }
     }
 
-    return get_json_data('vitrine');
+    return [];
 }
 
 /**

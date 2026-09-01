@@ -24,30 +24,37 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
     INDEX `idx_usuario_nivel` (`nivel`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. TABELA DA VITRINE CULTURAL (Posts de fotos, vídeos, ensaios)
-CREATE TABLE IF NOT EXISTS `vitrine` (
+-- 2. TABELA DA VITRINE CULTURAL / BLOG (Posts de fotos, vídeos, áudios, ensaios)
+CREATE TABLE IF NOT EXISTS `posts` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `tipo` ENUM('Foto', 'Vídeo', 'Perfil', 'Espaço') NOT NULL DEFAULT 'Foto',
-    `titulo` VARCHAR(200) NOT NULL,
+    `tipo` VARCHAR(60) NOT NULL DEFAULT 'Foto',
+    `titulo` VARCHAR(255) NOT NULL,
     `subtitulo` VARCHAR(255) DEFAULT NULL,
     `descricao` TEXT NOT NULL,
+    `conteudo` LONGTEXT DEFAULT NULL,
     `autor_id` INT DEFAULT NULL,
-    `autor_nome` VARCHAR(120) NOT NULL,
-    `autor_avatar` VARCHAR(255) DEFAULT NULL,
-    `autor_role` VARCHAR(100) DEFAULT 'Aluno - FotoCidade',
-    `bairro` VARCHAR(80) NOT NULL DEFAULT 'Sobradinho',
-    `media_url` VARCHAR(255) NOT NULL,
+    `autor_nome` VARCHAR(150) NOT NULL DEFAULT 'FotoCidade DF',
+    `autor_avatar` VARCHAR(255) DEFAULT 'assets/images/avatar-default.jpg',
+    `autor_role` VARCHAR(100) DEFAULT 'Administrador',
+    `bairro` VARCHAR(150) NOT NULL DEFAULT 'Sobradinho',
+    `cidade` VARCHAR(150) DEFAULT 'Brasília/DF',
+    `imagem` VARCHAR(255) DEFAULT NULL,
+    `media_url` VARCHAR(255) DEFAULT NULL,
     `thumbnail_url` VARCHAR(255) DEFAULT NULL,
+    `video_url` VARCHAR(255) DEFAULT NULL,
+    `audio_url` VARCHAR(255) DEFAULT NULL,
+    `tags` VARCHAR(255) DEFAULT 'Foto',
     `likes` INT DEFAULT 0,
     `compartilhamentos` INT DEFAULT 0,
-    `tags` VARCHAR(255) DEFAULT NULL,
     `destaque` TINYINT(1) DEFAULT 0,
     `ativo` TINYINT(1) DEFAULT 1,
     `criado_em` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`autor_id`) REFERENCES `usuarios`(`id`) ON DELETE SET NULL,
-    INDEX `idx_vitrine_tipo` (`tipo`),
-    INDEX `idx_vitrine_bairro` (`bairro`)
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_post_tipo` (`tipo`),
+    INDEX `idx_post_bairro` (`bairro`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- 3. TABELA DE PONTOS CULTURAIS & ORGANIZAÇÕES DO MAPA (map_locais)
 CREATE TABLE IF NOT EXISTS `map_locais` (

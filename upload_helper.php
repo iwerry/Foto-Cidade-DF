@@ -257,4 +257,41 @@ function upload_mapa_photo($fileArray, $nomeLocal, $id = 0) {
     return ['success' => false, 'message' => 'Falha ao mover arquivo enviado para /public/mapa/'];
 }
 
+/**
+ * Processa upload de imagem/mídia da Vitrine Cultural salvando em /public/vitrine/{titulo_sanitizado}_{id}.ext
+ */
+function upload_vitrine_media($fileArray, $tituloPost, $id = 0) {
+    if (!isset($fileArray) || $fileArray['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'Nenhum arquivo enviado ou erro no upload.'];
+    }
+
+    $targetDir = ROOT_PATH . '/public/vitrine';
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0755, true);
+    }
+
+    $ext = pathinfo($fileArray['name'], PATHINFO_EXTENSION);
+    $ext = strtolower($ext ?: 'jpg');
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp3', 'wav', 'mp4'])) {
+        $ext = 'jpg';
+    }
+
+    $tituloSanitizado = sanitize_file_name($tituloPost);
+    $filename = $tituloSanitizado . '_' . ($id ?: time()) . '.' . $ext;
+    $targetPath = $targetDir . '/' . $filename;
+    $relativePath = 'public/vitrine/' . $filename;
+
+    if (move_uploaded_file($fileArray['tmp_name'], $targetPath)) {
+        return [
+            'success' => true,
+            'path' => $relativePath,
+            'filename' => $filename,
+            'message' => 'Mídia da vitrine salva em /public/vitrine/ com sucesso!'
+        ];
+    }
+
+    return ['success' => false, 'message' => 'Falha ao mover arquivo enviado para /public/vitrine/'];
+}
+
+
 

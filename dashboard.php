@@ -31,117 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mensagemErro = 'Token de segurança expirado. Tente novamente.';
     } else {
         // -------------------------------------------------------------
-        // 1. CRUD VITRINE
+        // 1. CRUD USUÁRIOS COMPLETO (ADMIN & ALUNOS)
         // -------------------------------------------------------------
-        if ($action === 'salvar_vitrine') {
-            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
-            $tipo = $_POST['tipo'] ?? 'Foto';
-            $titulo = trim($_POST['titulo'] ?? '');
-            $subtitulo = trim($_POST['subtitulo'] ?? '');
-            $descricao = trim($_POST['descricao'] ?? '');
-            $autorNome = trim($_POST['autor_nome'] ?? $currentUser['nome']);
-            $autorRole = trim($_POST['autor_role'] ?? 'Aluno');
-            $bairro = trim($_POST['bairro'] ?? 'Sobradinho');
-            $tags = trim($_POST['tags'] ?? '');
-            $mediaUrl = $_POST['media_url_atual'] ?? '';
-
-            // Processa upload se enviado
-            if (isset($_FILES['media_arquivo']) && $_FILES['media_arquivo']['error'] === UPLOAD_ERR_OK) {
-                $upload = upload_local_file($_FILES['media_arquivo'], 'vitrine');
-                if ($upload['success']) {
-                    $mediaUrl = $upload['path'];
-                } else {
-                    $mensagemErro = $upload['message'];
-                }
-            }
-
-            if (empty($mediaUrl)) {
-                $mediaUrl = 'assets/images/oficina-olhar-fercal.jpg';
-            }
-
-            if (empty($mensagemErro)) {
-                if ($pdo) {
-                    try {
-                        $tableVitrine = get_existing_table_name($pdo, 'vitrine', 'posts');
-                        $cols = $pdo->query("SHOW COLUMNS FROM `{$tableVitrine}`")->fetchAll(PDO::FETCH_COLUMN);
-
-                        if ($id) {
-                            $fields = [];
-                            $params = [];
-                            if (in_array('tipo', $cols)) { $fields[] = "`tipo` = ?"; $params[] = $tipo; }
-                            if (in_array('titulo', $cols)) { $fields[] = "`titulo` = ?"; $params[] = $titulo; }
-                            if (in_array('subtitulo', $cols)) { $fields[] = "`subtitulo` = ?"; $params[] = $subtitulo; }
-                            if (in_array('descricao', $cols)) { $fields[] = "`descricao` = ?"; $params[] = $descricao; }
-                            if (in_array('autor_nome', $cols)) { $fields[] = "`autor_nome` = ?"; $params[] = $autorNome; }
-                            elseif (in_array('autor', $cols)) { $fields[] = "`autor` = ?"; $params[] = $autorNome; }
-                            if (in_array('autor_role', $cols)) { $fields[] = "`autor_role` = ?"; $params[] = $autorRole; }
-                            if (in_array('bairro', $cols)) { $fields[] = "`bairro` = ?"; $params[] = $bairro; }
-                            if (in_array('media_url', $cols)) { $fields[] = "`media_url` = ?"; $params[] = $mediaUrl; }
-                            elseif (in_array('imagem', $cols)) { $fields[] = "`imagem` = ?"; $params[] = $mediaUrl; }
-                            if (in_array('tags', $cols)) { $fields[] = "`tags` = ?"; $params[] = $tags; }
-
-                            if (!empty($fields)) {
-                                $sql = "UPDATE `{$tableVitrine}` SET " . implode(', ', $fields) . " WHERE `id` = ?";
-                                $params[] = $id;
-                                $stmt = $pdo->prepare($sql);
-                                $stmt->execute($params);
-                                $mensagemSucesso = 'Item da Vitrine atualizado com sucesso!';
-                            }
-                        } else {
-                            $fields = [];
-                            $placeholders = [];
-                            $params = [];
-                            if (in_array('tipo', $cols)) { $fields[] = "`tipo`"; $placeholders[] = "?"; $params[] = $tipo; }
-                            if (in_array('titulo', $cols)) { $fields[] = "`titulo`"; $placeholders[] = "?"; $params[] = $titulo; }
-                            if (in_array('subtitulo', $cols)) { $fields[] = "`subtitulo`"; $placeholders[] = "?"; $params[] = $subtitulo; }
-                            if (in_array('descricao', $cols)) { $fields[] = "`descricao`"; $placeholders[] = "?"; $params[] = $descricao; }
-                            if (in_array('autor_id', $cols)) { $fields[] = "`autor_id`"; $placeholders[] = "?"; $params[] = $currentUser['id']; }
-                            if (in_array('autor_nome', $cols)) { $fields[] = "`autor_nome`"; $placeholders[] = "?"; $params[] = $autorNome; }
-                            elseif (in_array('autor', $cols)) { $fields[] = "`autor`"; $placeholders[] = "?"; $params[] = $autorNome; }
-                            if (in_array('autor_role', $cols)) { $fields[] = "`autor_role`"; $placeholders[] = "?"; $params[] = $autorRole; }
-                            if (in_array('bairro', $cols)) { $fields[] = "`bairro`"; $placeholders[] = "?"; $params[] = $bairro; }
-                            if (in_array('media_url', $cols)) { $fields[] = "`media_url`"; $placeholders[] = "?"; $params[] = $mediaUrl; }
-                            elseif (in_array('imagem', $cols)) { $fields[] = "`imagem`"; $placeholders[] = "?"; $params[] = $mediaUrl; }
-                            if (in_array('thumbnail_url', $cols)) { $fields[] = "`thumbnail_url`"; $placeholders[] = "?"; $params[] = $mediaUrl; }
-                            if (in_array('tags', $cols)) { $fields[] = "`tags`"; $placeholders[] = "?"; $params[] = $tags; }
-
-                            if (!empty($fields)) {
-                                $sql = "INSERT INTO `{$tableVitrine}` (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
-                                $stmt = $pdo->prepare($sql);
-                                $stmt->execute($params);
-                                $mensagemSucesso = 'Novo item publicado na Vitrine com sucesso!';
-                            }
-                        }
-                    } catch (Exception $e) {
-                        $mensagemErro = 'Erro ao salvar na vitrine: ' . $e->getMessage();
-                    }
-                } else {
-                    global $lastDbError;
-                    $mensagemErro = 'Banco de dados MySQL desconectado: ' . ($lastDbError ?? 'Falha de conexão.');
-                }
-            }
-            $abaAtiva = 'vitrine';
-        }
-
-        elseif ($action === 'excluir_vitrine') {
-            $id = (int)($_POST['id'] ?? 0);
-            if ($id && $pdo) {
-                try {
-                    $tableVitrine = get_existing_table_name($pdo, 'vitrine', 'posts');
-                    $stmt = $pdo->prepare("DELETE FROM `{$tableVitrine}` WHERE id = ?");
-                    $stmt->execute([$id]);
-                    $mensagemSucesso = 'Item removido da Vitrine com sucesso!';
-                } catch (Exception $e) {
-                    $mensagemErro = 'Erro ao excluir item: ' . $e->getMessage();
-                }
-            }
-            $abaAtiva = 'vitrine';
-        }
-
-        // -------------------------------------------------------------
-        // 2. CRUD USUÁRIOS COMPLETO (ADMIN & ALUNOS)
-        // -------------------------------------------------------------
-        elseif ($action === 'salvar_usuario') {
+        if ($action === 'salvar_usuario') {
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
             $nome = trim($_POST['nome'] ?? '');
             $email = trim(filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL));
@@ -281,6 +173,147 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mensagemErro = 'Você não pode excluir sua própria conta enquanto logado.';
             }
             $abaAtiva = 'usuarios';
+        }
+
+        // -------------------------------------------------------------
+        // 2. CRUD VITRINE CULTURAL / BLOG (BASE UNIFICADA posts / vitrine)
+        // -------------------------------------------------------------
+        elseif ($action === 'salvar_vitrine') {
+            $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+            $titulo = trim($_POST['titulo'] ?? '');
+            $subtitulo = trim($_POST['subtitulo'] ?? '');
+            $tipo = $_POST['tipo'] ?? 'Foto';
+            $cidade = trim($_POST['cidade'] ?? 'Brasília/DF');
+            $bairro = trim($_POST['bairro'] ?? 'Sobradinho');
+            $descricao = trim($_POST['descricao'] ?? '');
+            $conteudo = trim($_POST['conteudo'] ?? '');
+            $video_url = trim($_POST['video_url'] ?? '');
+            $audio_url = trim($_POST['audio_url'] ?? '');
+            $tags = trim($_POST['tags'] ?? $tipo);
+            $autor_nome = trim($_POST['autor_nome'] ?? ($currentUser['nome'] ?? 'FotoCidade DF'));
+            $autor_role = trim($_POST['autor_role'] ?? 'Administrador');
+            $autor_avatar = $currentUser['avatar'] ?? 'assets/images/avatar-default.jpg';
+            $destaque = isset($_POST['destaque']) ? 1 : 0;
+            $media_url = $_POST['media_atual'] ?? 'assets/images/oficina-olhar-fercal.jpg';
+            $redirect_to = $_POST['redirect_to'] ?? '';
+
+            if (isset($_FILES['media_arquivo']) && $_FILES['media_arquivo']['error'] === UPLOAD_ERR_OK) {
+                $upload = upload_vitrine_media($_FILES['media_arquivo'], $titulo, $id ?: time());
+                if ($upload['success']) {
+                    $media_url = $upload['path'];
+                }
+            }
+
+            if ($pdo && !empty($titulo)) {
+                try {
+                    ensure_vitrine_and_posts_columns($pdo);
+                    $tableVitrine = get_existing_table_name($pdo, 'posts', 'vitrine');
+                    $cols = $pdo->query("SHOW COLUMNS FROM `{$tableVitrine}`")->fetchAll(PDO::FETCH_COLUMN);
+
+                    if ($id) {
+                        $fields = [];
+                        $params = [];
+                        if (in_array('titulo', $cols)) { $fields[] = "`titulo` = ?"; $params[] = $titulo; }
+                        if (in_array('subtitulo', $cols)) { $fields[] = "`subtitulo` = ?"; $params[] = $subtitulo; }
+                        if (in_array('tipo', $cols)) { $fields[] = "`tipo` = ?"; $params[] = $tipo; }
+                        if (in_array('cidade', $cols)) { $fields[] = "`cidade` = ?"; $params[] = $cidade; }
+                        if (in_array('bairro', $cols)) { $fields[] = "`bairro` = ?"; $params[] = $bairro; }
+                        if (in_array('descricao', $cols)) { $fields[] = "`descricao` = ?"; $params[] = $descricao; }
+                        if (in_array('conteudo', $cols)) { $fields[] = "`conteudo` = ?"; $params[] = $conteudo; }
+                        if (in_array('media_url', $cols)) { $fields[] = "`media_url` = ?"; $params[] = $media_url; }
+                        if (in_array('imagem', $cols)) { $fields[] = "`imagem` = ?"; $params[] = $media_url; }
+                        if (in_array('thumbnail_url', $cols)) { $fields[] = "`thumbnail_url` = ?"; $params[] = $media_url; }
+                        if (in_array('video_url', $cols)) { $fields[] = "`video_url` = ?"; $params[] = $video_url; }
+                        if (in_array('audio_url', $cols)) { $fields[] = "`audio_url` = ?"; $params[] = $audio_url; }
+                        if (in_array('tags', $cols)) { $fields[] = "`tags` = ?"; $params[] = $tags; }
+                        if (in_array('autor_nome', $cols)) { $fields[] = "`autor_nome` = ?"; $params[] = $autor_nome; }
+                        if (in_array('autor_role', $cols)) { $fields[] = "`autor_role` = ?"; $params[] = $autor_role; }
+                        if (in_array('destaque', $cols)) { $fields[] = "`destaque` = ?"; $params[] = $destaque; }
+
+                        if (!empty($fields)) {
+                            $sql = "UPDATE `{$tableVitrine}` SET " . implode(', ', $fields) . " WHERE `id` = ?";
+                            $params[] = $id;
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute($params);
+                            $mensagemSucesso = 'Publicação atualizada com sucesso na Vitrine Cultural!';
+                        }
+                    } else {
+                        $fields = [];
+                        $placeholders = [];
+                        $params = [];
+
+                        if (in_array('titulo', $cols)) { $fields[] = "`titulo`"; $placeholders[] = "?"; $params[] = $titulo; }
+                        if (in_array('subtitulo', $cols)) { $fields[] = "`subtitulo`"; $placeholders[] = "?"; $params[] = $subtitulo; }
+                        if (in_array('tipo', $cols)) { $fields[] = "`tipo`"; $placeholders[] = "?"; $params[] = $tipo; }
+                        if (in_array('cidade', $cols)) { $fields[] = "`cidade`"; $placeholders[] = "?"; $params[] = $cidade; }
+                        if (in_array('bairro', $cols)) { $fields[] = "`bairro`"; $placeholders[] = "?"; $params[] = $bairro; }
+                        if (in_array('descricao', $cols)) { $fields[] = "`descricao`"; $placeholders[] = "?"; $params[] = $descricao; }
+                        if (in_array('conteudo', $cols)) { $fields[] = "`conteudo`"; $placeholders[] = "?"; $params[] = $conteudo; }
+                        if (in_array('media_url', $cols)) { $fields[] = "`media_url`"; $placeholders[] = "?"; $params[] = $media_url; }
+                        if (in_array('imagem', $cols)) { $fields[] = "`imagem`"; $placeholders[] = "?"; $params[] = $media_url; }
+                        if (in_array('thumbnail_url', $cols)) { $fields[] = "`thumbnail_url`"; $placeholders[] = "?"; $params[] = $media_url; }
+                        if (in_array('video_url', $cols)) { $fields[] = "`video_url`"; $placeholders[] = "?"; $params[] = $video_url; }
+                        if (in_array('audio_url', $cols)) { $fields[] = "`audio_url`"; $placeholders[] = "?"; $params[] = $audio_url; }
+                        if (in_array('tags', $cols)) { $fields[] = "`tags`"; $placeholders[] = "?"; $params[] = $tags; }
+                        if (in_array('autor_id', $cols)) { $fields[] = "`autor_id`"; $placeholders[] = "?"; $params[] = (int)($currentUser['id'] ?? 1); }
+                        if (in_array('autor_nome', $cols)) { $fields[] = "`autor_nome`"; $placeholders[] = "?"; $params[] = $autor_nome; }
+                        if (in_array('autor_avatar', $cols)) { $fields[] = "`autor_avatar`"; $placeholders[] = "?"; $params[] = $autor_avatar; }
+                        if (in_array('autor_role', $cols)) { $fields[] = "`autor_role`"; $placeholders[] = "?"; $params[] = $autor_role; }
+                        if (in_array('destaque', $cols)) { $fields[] = "`destaque`"; $placeholders[] = "?"; $params[] = $destaque; }
+                        if (in_array('ativo', $cols)) { $fields[] = "`ativo`"; $placeholders[] = "?"; $params[] = 1; }
+
+                        if (!empty($fields)) {
+                            $sql = "INSERT INTO `{$tableVitrine}` (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute($params);
+                            $mensagemSucesso = 'Nova publicação criada com sucesso na Vitrine Cultural!';
+                        }
+                    }
+
+                    if (!empty($redirect_to)) {
+                        header("Location: " . $redirect_to . "?msg=sucesso");
+                        exit;
+                    }
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao salvar post na Vitrine: ' . $e->getMessage();
+                    error_log($mensagemErro);
+                }
+            }
+            $abaAtiva = 'vitrine';
+        }
+
+        elseif ($action === 'excluir_vitrine') {
+            $id = (int)($_POST['id'] ?? 0);
+            $redirect_to = $_POST['redirect_to'] ?? '';
+            if ($id && $pdo) {
+                try {
+                    ensure_vitrine_and_posts_columns($pdo);
+                    $tableVitrine = get_existing_table_name($pdo, 'posts', 'vitrine');
+
+                    // Tenta remover arquivo de mídia se for local
+                    try {
+                        $stmtFind = $pdo->prepare("SELECT media_url, imagem, thumbnail_url FROM `{$tableVitrine}` WHERE id = ?");
+                        $stmtFind->execute([$id]);
+                        $found = $stmtFind->fetch();
+                        $pic = $found['media_url'] ?? ($found['imagem'] ?? '');
+                        if (!empty($pic) && strpos($pic, 'public/vitrine/') !== false && file_exists(ROOT_PATH . '/' . $pic)) {
+                            @unlink(ROOT_PATH . '/' . $pic);
+                        }
+                    } catch (Exception $ePic) {}
+
+                    $stmt = $pdo->prepare("DELETE FROM `{$tableVitrine}` WHERE id = ?");
+                    $stmt->execute([$id]);
+                    $mensagemSucesso = 'Publicação excluída com sucesso da Vitrine Cultural!';
+
+                    if (!empty($redirect_to)) {
+                        header("Location: " . $redirect_to . "?msg=excluido");
+                        exit;
+                    }
+                } catch (Exception $e) {
+                    $mensagemErro = 'Erro ao excluir publicação: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'vitrine';
         }
 
         // -------------------------------------------------------------
@@ -1249,70 +1282,148 @@ require_once ROOT_PATH . '/components/common/logo.php';
 </div>
 
 <!-- ==================================================================== -->
-<!-- MODAL CRUD VITRINE CULTURAL -->
+<!-- MODAL CRUD VITRINE CULTURAL / BLOG COMPLETO -->
 <!-- ==================================================================== -->
 <div id="modal-vitrine-crud" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[95vh] overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[95vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 id="modal-vitrine-title" class="font-heading font-bold text-lg text-slate-900">Novo Item na Vitrine</h3>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-orange-50 text-[#FF8A00] flex items-center justify-center">
+                    <i data-lucide="grid" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 id="modal-vitrine-title" class="font-heading font-bold text-lg text-slate-900">Novo Post na Vitrine</h3>
+                    <p class="text-[11px] text-slate-500">Publicação de fotos, ensaios, vídeos, podcasts e artigos autorais.</p>
+                </div>
+            </div>
             <button onclick="fecharModal('modal-vitrine-crud')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
         </div>
 
-        <form method="POST" action="dashboard.php" enctype="multipart/form-data" class="space-y-3">
+        <form method="POST" action="dashboard.php" enctype="multipart/form-data" class="space-y-4">
             <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
             <input type="hidden" name="action" value="salvar_vitrine">
             <input type="hidden" id="vitrine_id" name="id" value="">
-            <input type="hidden" id="vitrine_media_url_atual" name="media_url_atual" value="">
+            <input type="hidden" id="vitrine_media_atual" name="media_atual" value="">
 
+            <!-- Seção Mídia / Imagem com Preview -->
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-center gap-4">
+                <div class="relative shrink-0">
+                    <img id="vitrine_media_preview" 
+                         src="assets/images/oficina-olhar-fercal.jpg" 
+                         onerror="this.src='assets/images/oficina-olhar-fercal.jpg'"
+                         class="w-28 h-20 rounded-xl object-cover border-2 border-white shadow-md bg-white" />
+                </div>
+                <div class="space-y-1 text-center sm:text-left flex-1">
+                    <label class="block text-xs font-bold text-slate-800">Foto de Capa / Imagem Principal</label>
+                    <p class="text-[11px] text-slate-500">Salva no servidor em <code class="font-mono bg-white px-1 py-0.5 rounded text-blue-600">/public/vitrine/</code>.</p>
+                    <input type="file" 
+                           id="vitrine_media_input"
+                           name="media_arquivo" 
+                           accept="image/jpeg,image/png,image/webp,image/gif,audio/mp3,video/mp4" 
+                           onchange="previewVitrineMedia(this)"
+                           class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0D5BA8] file:text-white cursor-pointer">
+                </div>
+            </div>
+
+            <!-- Título & Subtítulo -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div class="sm:col-span-2">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Título *</label>
-                    <input type="text" id="vitrine_titulo" name="titulo" required placeholder="Título do trabalho ou ensaio" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Título da Publicação *</label>
+                    <input type="text" id="vitrine_titulo" name="titulo" required placeholder="Ex: Mapeie Seu Bairro: Olhar sobre as Feiras Livres" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#0D5BA8] focus:bg-white">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Mídia</label>
-                    <select id="vitrine_tipo" name="tipo" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                        <option value="foto">Fotografia</option>
-                        <option value="video">Vídeo</option>
-                        <option value="podcast">Podcast</option>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Categoria / Tipo *</label>
+                    <select id="vitrine_tipo" name="tipo" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                        <option value="Foto">Foto</option>
+                        <option value="Vídeo">Vídeo</option>
+                        <option value="Ensaio">Ensaio</option>
+                        <option value="Áudio">Áudio / Podcast</option>
+                        <option value="Perfil">Perfil</option>
+                        <option value="Espaço">Espaço</option>
+                        <option value="Notícia">Notícia / Artigo</option>
                     </select>
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Subtítulo</label>
-                <input type="text" id="vitrine_subtitulo" name="subtitulo" placeholder="Subtítulo ou contexto breve" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Subtítulo / Linha Fina</label>
+                <input type="text" id="vitrine_subtitulo" name="subtitulo" placeholder="Ex: Cores e sabores matinais na Feira Central de Sobradinho" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#0D5BA8] focus:bg-white">
             </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Descrição</label>
-                <textarea id="vitrine_descricao" name="descricao" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="Conte a história por trás deste registro..."></textarea>
-            </div>
-
+            <!-- Cidade & Bairro Dinâmico -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Bairro / Região</label>
-                    <input type="text" id="vitrine_bairro" name="bairro" placeholder="Ex: Sobradinho I, Fercal" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Cidade / Estado</label>
+                    <select id="vitrine_cidade_select" name="cidade" onchange="carregarBairrosPorCidade(this.value, 'vitrine_bairro_select')" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
+                        <option value="Brasília/DF">Brasília / DF</option>
+                        <option value="Entorno/DF">Entorno / GO-MG</option>
+                        <option value="Nacional">Nacional</option>
+                    </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Autor(a)</label>
-                    <input type="text" id="vitrine_autor_nome" name="autor_nome" placeholder="Ex: Ana Silva" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Região Administrativa / Bairro</label>
+                    <select id="vitrine_bairro_select" name="bairro" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
+                    </select>
                 </div>
             </div>
 
+            <!-- Resumo (Cards) -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Tags (separadas por vírgula)</label>
-                <input type="text" id="vitrine_tags" name="tags" placeholder="Retrato, Cotidiano, Periferia" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Resumo / Descrição Curta (Aparece no Card) *</label>
+                <textarea id="vitrine_descricao" name="descricao" rows="2" required placeholder="Breve introdução para atrair o leitor nos cards da vitrine..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#0D5BA8] focus:bg-white"></textarea>
             </div>
 
+            <!-- Artigo Completo (Blog / Relato Extenso) -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Arquivo de Mídia (Upload Local)</label>
-                <input type="file" name="midia_arquivo" accept="image/*,video/mp4" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#0D5BA8] file:text-white">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Conteúdo Completo do Artigo / Relato (Blog)</label>
+                <textarea id="vitrine_conteudo" name="conteudo" rows="6" placeholder="Escreva o texto completo do artigo, relato, ensaio ou reportagem..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal focus:ring-2 focus:ring-[#0D5BA8] focus:bg-white"></textarea>
+            </div>
+
+            <!-- Mídias Complementares (Vídeo & Áudio Embeds) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200/70">
+                <div>
+                    <label class="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1">
+                        <i data-lucide="video" class="w-3.5 h-3.5 text-red-600"></i>
+                        <span>Link de Vídeo (YouTube, Vimeo, MP4)</span>
+                    </label>
+                    <input type="text" id="vitrine_video_url" name="video_url" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1">
+                        <i data-lucide="music" class="w-3.5 h-3.5 text-[#FF8A00]"></i>
+                        <span>Link de Áudio (Spotify, SoundCloud, MP3)</span>
+                    </label>
+                    <input type="text" id="vitrine_audio_url" name="audio_url" placeholder="https://open.spotify.com/episode/... ou link MP3" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+                </div>
+            </div>
+
+            <!-- Autor & Tags -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Autor / Criador</label>
+                    <input type="text" id="vitrine_autor_nome" name="autor_nome" placeholder="Ex: Daniel Rodrigues" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Cargo / Papel do Autor</label>
+                    <input type="text" id="vitrine_autor_role" name="autor_role" placeholder="Ex: Administrador, Aluno - Eixo Fotografia" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tags (separadas por vírgula)</label>
+                    <input type="text" id="vitrine_tags" name="tags" placeholder="feira, fotografia, cerrado" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="vitrine_destaque" name="destaque" value="1" class="rounded text-[#FF8A00] focus:ring-[#FF8A00] w-4 h-4 cursor-pointer">
+                <label for="vitrine_destaque" class="text-xs font-bold text-slate-800 cursor-pointer">Destacar este post na página inicial e no topo da Vitrine</label>
             </div>
 
             <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
-                <button type="button" onclick="fecharModal('modal-vitrine-crud')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancelar</button>
-                <button type="submit" class="px-6 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white rounded-xl text-xs font-bold shadow-md">Salvar Post</button>
+                <button type="button" onclick="fecharModal('modal-vitrine-crud')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer">Cancelar</button>
+                <button type="submit" class="px-6 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Salvar Publicação</span>
+                </button>
             </div>
         </form>
     </div>
@@ -1858,6 +1969,74 @@ function editarUsuario(u) {
     document.getElementById('modal-usuario-crud').classList.add('flex');
 }
 
+function previewVitrineMedia(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('vitrine_media_preview');
+            if (preview) preview.src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function abrirModalVitrine() {
+    document.getElementById('modal-vitrine-title').innerText = 'Novo Post na Vitrine';
+    document.getElementById('vitrine_id').value = '';
+    document.getElementById('vitrine_titulo').value = '';
+    document.getElementById('vitrine_subtitulo').value = '';
+    document.getElementById('vitrine_tipo').value = 'Foto';
+    document.getElementById('vitrine_cidade_select').value = 'Brasília/DF';
+    carregarBairrosPorCidade('Brasília/DF', 'vitrine_bairro_select', 'Sobradinho');
+    document.getElementById('vitrine_descricao').value = '';
+    if (document.getElementById('vitrine_conteudo')) document.getElementById('vitrine_conteudo').value = '';
+    if (document.getElementById('vitrine_video_url')) document.getElementById('vitrine_video_url').value = '';
+    if (document.getElementById('vitrine_audio_url')) document.getElementById('vitrine_audio_url').value = '';
+    if (document.getElementById('vitrine_tags')) document.getElementById('vitrine_tags').value = '';
+    if (document.getElementById('vitrine_autor_nome')) document.getElementById('vitrine_autor_nome').value = 'FotoCidade DF';
+    if (document.getElementById('vitrine_autor_role')) document.getElementById('vitrine_autor_role').value = 'Administrador';
+    if (document.getElementById('vitrine_destaque')) document.getElementById('vitrine_destaque').checked = false;
+    document.getElementById('vitrine_media_atual').value = '';
+    if (document.getElementById('vitrine_media_preview')) {
+        document.getElementById('vitrine_media_preview').src = 'assets/images/oficina-olhar-fercal.jpg';
+    }
+    abrirModal('modal-vitrine-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function editarVitrine(v) {
+    document.getElementById('modal-vitrine-title').innerText = 'Editar Post da Vitrine';
+    document.getElementById('vitrine_id').value = v.id || '';
+    document.getElementById('vitrine_titulo').value = v.titulo || '';
+    document.getElementById('vitrine_subtitulo').value = v.subtitulo || '';
+    document.getElementById('vitrine_tipo').value = v.tipo || 'Foto';
+    
+    const cid = v.cidade || 'Brasília/DF';
+    const bai = v.bairro || 'Sobradinho';
+    document.getElementById('vitrine_cidade_select').value = cid;
+    carregarBairrosPorCidade(cid, 'vitrine_bairro_select', bai);
+    
+    document.getElementById('vitrine_descricao').value = v.descricao || '';
+    if (document.getElementById('vitrine_conteudo')) document.getElementById('vitrine_conteudo').value = v.conteudo || '';
+    if (document.getElementById('vitrine_video_url')) document.getElementById('vitrine_video_url').value = v.videoUrl || v.video_url || '';
+    if (document.getElementById('vitrine_audio_url')) document.getElementById('vitrine_audio_url').value = v.audioUrl || v.audio_url || '';
+    
+    const tagsVal = Array.isArray(v.tags) ? v.tags.join(', ') : (v.tags || '');
+    if (document.getElementById('vitrine_tags')) document.getElementById('vitrine_tags').value = tagsVal;
+    if (document.getElementById('vitrine_autor_nome')) document.getElementById('vitrine_autor_nome').value = v.autorNome || v.autor_nome || 'FotoCidade DF';
+    if (document.getElementById('vitrine_autor_role')) document.getElementById('vitrine_autor_role').value = v.autorRole || v.autor_role || 'Administrador';
+    if (document.getElementById('vitrine_destaque')) document.getElementById('vitrine_destaque').checked = !!(v.destaque);
+    
+    const currentMedia = v.mediaUrl || v.imagem || v.thumbnailUrl || 'assets/images/oficina-olhar-fercal.jpg';
+    document.getElementById('vitrine_media_atual').value = currentMedia;
+    if (document.getElementById('vitrine_media_preview')) {
+        document.getElementById('vitrine_media_preview').src = currentMedia;
+    }
+    
+    abrirModal('modal-vitrine-crud');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
 let pickerMap = null;
 let pickerMarker = null;
 
@@ -1926,7 +2105,9 @@ function editarPontoMapa(p) {
 
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('novo') === '1' || urlParams.get('novo') === 'ponto') {
+    if (urlParams.get('aba') === 'vitrine' && urlParams.get('novo') === '1') {
+        abrirModalVitrine();
+    } else if (urlParams.get('novo') === '1' || urlParams.get('novo') === 'ponto') {
         abrirModalMapa();
     } else if (urlParams.get('novo') === 'parceiro') {
         abrirModalParceiro();
