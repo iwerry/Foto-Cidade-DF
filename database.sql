@@ -178,11 +178,3 @@ CREATE TABLE IF NOT EXISTS `aluno_selos` (
     UNIQUE KEY `uk_aluno_selo` (`aluno_id`, `selo_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ====================================================================
--- SEED INICIAL: Administrador 'Daniel' e Aluno 'Ana Silva'
--- ====================================================================
--- Senha do Admin Daniel: admin123
--- Senha da Aluna Ana Silva: aluno123
-INSERT INTO `usuarios` (`nome`, `email`, `senha`, `nivel`, `cidade`, `avatar`, `biografia`) VALUES
-('Daniel', 'daniel@fotocidade.org', '$2y$10$OqXG3tF5g1n1q0m8e/d5eO1q5F8A2m4C6E8G0I2K4M6O8Q0S2U4W.', 'admin', 'Sobradinho I', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80', 'Coordenador Geral e Administrador da Plataforma FotoCidade DF.'),
-('Ana Silva', 'ana.silva@fotocidade.org', '$2y$10$T8Z6M3c8x9Y1w0v7u6t5rO1q5F8A2m4C6E8G0I2K4M6O8Q0S2U4W.', 'aluno', 'Ceilândia', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80', 'Fotógrafa comunitária e estudante de comunicação em Ceilândia. Apaixonada por registrar a arquitetura popular e histórias vivas da periferia.');
