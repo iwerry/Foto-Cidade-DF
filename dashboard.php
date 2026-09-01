@@ -684,19 +684,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cursoId = (int)$_POST['curso_id'];
             $titulo = trim($_POST['titulo'] ?? '');
             $descricao = trim($_POST['descricao'] ?? '');
+            $conteudo = $_POST['conteudo'] ?? '';
+            $tipoVideo = in_array($_POST['tipo_video'] ?? '', ['youtube', 'vimeo', 'upload', 'nenhum']) ? $_POST['tipo_video'] : 'nenhum';
+            $urlVideo = trim($_POST['url_video'] ?? '');
+            $tipoAudio = in_array($_POST['tipo_audio'] ?? '', ['link', 'upload', 'nenhum']) ? $_POST['tipo_audio'] : 'nenhum';
+            $audioUrl = trim($_POST['audio_url'] ?? '');
+            $duracaoMinutos = (int)($_POST['duracao_minutos'] ?? 0);
             $ordem = (int)($_POST['ordem'] ?? 0);
+
+            // Upload de vídeo do módulo
+            if ($tipoVideo === 'upload' && isset($_FILES['video_arquivo']) && $_FILES['video_arquivo']['error'] === UPLOAD_ERR_OK) {
+                $uploadVid = upload_aula_video($_FILES['video_arquivo'], $titulo, $id ?: time());
+                if ($uploadVid['success']) {
+                    $urlVideo = $uploadVid['path'];
+                }
+            }
+
+            // Upload de áudio do módulo
+            if ($tipoAudio === 'upload' && isset($_FILES['audio_arquivo']) && $_FILES['audio_arquivo']['error'] === UPLOAD_ERR_OK) {
+                $uploadAud = upload_aula_audio($_FILES['audio_arquivo'], $titulo, $id ?: time());
+                if ($uploadAud['success']) {
+                    $audioUrl = $uploadAud['path'];
+                }
+            }
 
             if ($pdo && !empty($titulo) && $cursoId) {
                 try {
+                    check_and_migrate_lms_schema($pdo);
                     if ($id) {
-                        $stmt = $pdo->prepare("UPDATE `modulos` SET titulo=?, descricao=?, ordem=? WHERE id=?");
-                        $stmt->execute([$titulo, $descricao, $ordem, $id]);
+                        $stmt = $pdo->prepare("UPDATE `modulos` SET titulo=?, descricao=?, conteudo=?, tipo_video=?, url_video=?, tipo_audio=?, audio_url=?, duracao_minutos=?, ordem=? WHERE id=?");
+                        $stmt->execute([$titulo, $descricao, $conteudo, $tipoVideo, $urlVideo, $tipoAudio, $audioUrl, $duracaoMinutos, $ordem, $id]);
+                        $moduloId = $id;
                         $mensagemSucesso = 'Módulo atualizado com sucesso!';
                     } else {
-                        $stmt = $pdo->prepare("INSERT INTO `modulos` (curso_id, titulo, descricao, ordem) VALUES (?, ?, ?, ?)");
-                        $stmt->execute([$cursoId, $titulo, $descricao, $ordem]);
-                        $mensagemSucesso = 'Novo Módulo adicionado ao curso!';
+                        $stmt = $pdo->prepare("INSERT INTO `modulos` (curso_id, titulo, descricao, conteudo, tipo_video, url_video, tipo_audio, audio_url, duracao_minutos, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([$cursoId, $titulo, $descricao, $conteudo, $tipoVideo, $urlVideo, $tipoAudio, $audioUrl, $duracaoMinutos, $ordem]);
+                        $moduloId = $pdo->lastInsertId();
+                        $mensagemSucesso = 'Novo Módulo com conteúdo pedagógico criado com sucesso!';
                     }
+
                     header("Location: dashboard.php?aba=cursos&curso_id={$cursoId}&msg=modulo_salvo");
                     exit;
                 } catch (Exception $e) {
@@ -2379,44 +2405,183 @@ require_once ROOT_PATH . '/components/common/logo.php';
 </div>
 
 <!-- ==================================================================== -->
-<!-- 3. MODAL CRUD MÓDULO -->
+<!-- ==================================================================== -->
+<!-- 3. MODAL CRUD MÓDULO (EXPANDIDO: EDITOR RICO WYSIWYG, VÍDEO, ÁUDIO, ANEXOS) -->
 <!-- ==================================================================== -->
 <div id="modal-modulo-crud" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100">
+    <div class="bg-white rounded-3xl max-w-5xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[96vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-xl bg-blue-50 text-[#0D5BA8] flex items-center justify-center">
-                    <i data-lucide="folder-plus" class="w-4 h-4"></i>
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-2xl bg-blue-50 text-[#0D5BA8] flex items-center justify-center shadow-xs">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
                 </div>
-                <h3 id="modal-modulo-title" class="font-heading font-bold text-lg text-slate-900">Novo Módulo</h3>
+                <div>
+                    <h3 id="modal-modulo-title" class="font-heading font-extrabold text-xl text-slate-900">Estruturar Conteúdo do Módulo</h3>
+                    <p class="text-[11px] text-slate-400">Editor visual estilo WordPress / TinyMCE com texto rico, vídeos, áudios e materiais em PDF.</p>
+                </div>
             </div>
             <button onclick="fecharModal('modal-modulo-crud')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
         </div>
 
-        <form method="POST" action="dashboard.php" class="space-y-4">
+        <form method="POST" action="dashboard.php" enctype="multipart/form-data" onsubmit="syncModuloContent()" class="space-y-4">
             <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
             <input type="hidden" name="action" value="salvar_modulo">
             <input type="hidden" id="modulo_id" name="id" value="">
             <input type="hidden" id="modulo_curso_id" name="curso_id" value="">
+            <textarea id="modulo_conteudo_hidden" name="conteudo" class="hidden"></textarea>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Título do Módulo *</label>
-                <input type="text" id="modulo_titulo" name="titulo" required placeholder="Ex: Módulo 01 - Introdução e Enquadramento" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+            <!-- Título do Módulo -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Título do Módulo *</label>
+                    <input type="text" id="modulo_titulo" name="titulo" required placeholder="Ex: Módulo 01 - Introdução ao Enquadramento e Luz" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Ordem no Curso</label>
+                    <input type="number" id="modulo_ordem" name="ordem" value="0" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                </div>
             </div>
 
+            <!-- Descrição Curta -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Descrição Curta (Opcional)</label>
-                <textarea id="modulo_descricao" name="descricao" rows="2" placeholder="Resumo dos objetivos deste módulo..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"></textarea>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Resumo Curto / Objetivos do Módulo</label>
+                <textarea id="modulo_descricao" name="descricao" rows="2" placeholder="Resumo pedagógico e conceitos fundamentais desenvolvidos neste módulo..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"></textarea>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Ordem do Módulo</label>
-                <input type="number" id="modulo_ordem" name="ordem" value="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <!-- ========================================================= -->
+            <!-- EDITOR DE CONTEÚDO RICO (WYSIWYG - Estilo WordPress / TinyMCE) -->
+            <!-- ========================================================= -->
+            <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                <!-- Barra de Ferramentas WordPress -->
+                <div class="bg-slate-100 p-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-1.5 select-none">
+                    <div class="flex flex-wrap items-center gap-1">
+                        <!-- Headings Dropdown -->
+                        <select onchange="formatModuloBlock(this.value); this.selectedIndex=0;" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs font-medium cursor-pointer">
+                            <option value="">Formato do Texto</option>
+                            <option value="p">Parágrafo Padrão</option>
+                            <option value="h1">Título 1 (H1)</option>
+                            <option value="h2">Título 2 (H2)</option>
+                            <option value="h3">Título 3 (H3)</option>
+                            <option value="blockquote">Citação (Blockquote)</option>
+                        </select>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                        <button type="button" onclick="execModuloCmd('bold')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded font-black text-xs" title="Negrito (Ctrl+B)">B</button>
+                        <button type="button" onclick="execModuloCmd('italic')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded italic font-serif text-xs" title="Itálico (Ctrl+I)">I</button>
+                        <button type="button" onclick="execModuloCmd('underline')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded underline text-xs" title="Sublinhado">U</button>
+                        <button type="button" onclick="execModuloCmd('strikeThrough')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded line-through text-xs" title="Riscado">S</button>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                        <button type="button" onclick="execModuloCmd('insertUnorderedList')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Lista com Marcadores">• Lista</button>
+                        <button type="button" onclick="execModuloCmd('insertOrderedList')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Lista Numerada">1. Lista</button>
+                        <button type="button" onclick="execModuloCmd('formatBlock', '<blockquote>')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs font-serif" title="Citação">❝ Citação</button>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                        <button type="button" onclick="inserirLinkModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-blue-600 font-bold" title="Inserir Link">🔗 Inserir Link</button>
+                        <button type="button" onclick="execModuloCmd('removeFormat')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-slate-500" title="Limpar Formatação">Tx</button>
+                    </div>
+
+                    <!-- Alternar Visual / HTML -->
+                    <div class="flex items-center gap-1">
+                        <button type="button" id="btn-mod-mode-visual" onclick="toggleModuloEditorMode('visual')" class="px-3 py-1 bg-[#0D5BA8] text-white font-bold text-xs rounded">Visual</button>
+                        <button type="button" id="btn-mod-mode-html" onclick="toggleModuloEditorMode('html')" class="px-3 py-1 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs rounded">Código HTML</button>
+                    </div>
+                </div>
+
+                <!-- Área Editável Visual -->
+                <div id="modulo_editor_visual" contenteditable="true" class="p-5 min-h-[260px] max-h-[400px] overflow-y-auto bg-white text-slate-800 text-sm focus:outline-none leading-relaxed prose prose-slate max-w-none">
+                    <p>Escreva o conteúdo textual, referências, orientações didáticas e conceitos para este módulo...</p>
+                </div>
+
+                <!-- Área Código HTML (Oculta por padrão) -->
+                <textarea id="modulo_editor_html" rows="10" class="hidden w-full p-5 font-mono text-xs bg-slate-900 text-slate-100 focus:outline-none leading-relaxed"></textarea>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- SEÇÃO DE VÍDEO DO MÓDULO (YouTube / Vimeo / MP4 Upload) -->
+            <!-- ========================================================= -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                        <i data-lucide="play-circle" class="w-4 h-4 text-rose-500"></i>
+                        <span>Vídeo do Módulo (YouTube, Vimeo ou Upload MP4)</span>
+                    </h4>
+                    <span class="text-[10px] text-slate-400">Player de vídeo embutido</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Origem do Vídeo</label>
+                        <select id="modulo_tipo_video" name="tipo_video" onchange="toggleModuloVideoInputs(this.value)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
+                            <option value="youtube">YouTube (Link / Embed)</option>
+                            <option value="vimeo">Vimeo (Link)</option>
+                            <option value="upload">Upload de Vídeo Local (MP4)</option>
+                            <option value="nenhum">Sem Vídeo</option>
+                        </select>
+                    </div>
+                    
+                    <div id="mod_box_url_video" class="sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Link do Vídeo (YouTube / Vimeo)</label>
+                        <input type="text" id="modulo_url_video" name="url_video" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono">
+                    </div>
+
+                    <div id="mod_box_upload_video" class="hidden sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Upload de Arquivo de Vídeo (MP4 / WebM)</label>
+                        <input type="file" name="video_arquivo" accept="video/mp4,video/webm" class="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-rose-500 file:text-white cursor-pointer">
+                        <p class="text-[10px] text-slate-400 mt-0.5">Salvo em <code class="font-mono bg-white px-1 py-0.5 rounded text-rose-600">/public/aulas/videos/</code></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- SEÇÃO DE ÁUDIO DO MÓDULO (Podcast / Narração MP3) -->
+            <!-- ========================================================= -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                        <i data-lucide="headphones" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Áudio / Podcast do Módulo (Player Específico)</span>
+                    </h4>
+                    <span class="text-[10px] text-slate-400">Reprodução de áudio nativo</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Origem do Áudio</label>
+                        <select id="modulo_tipo_audio" name="tipo_audio" onchange="toggleModuloAudioInputs(this.value)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
+                            <option value="nenhum">Sem Áudio</option>
+                            <option value="upload">Upload de Áudio (MP3 / WAV / OGG)</option>
+                            <option value="link">Link Externo de Áudio (URL)</option>
+                        </select>
+                    </div>
+
+                    <div id="mod_box_upload_audio" class="hidden sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Upload de Áudio MP3 (Hospedado no Servidor)</label>
+                        <input type="file" name="audio_arquivo" accept="audio/mp3,audio/wav,audio/ogg,audio/m4a" class="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white cursor-pointer">
+                        <p class="text-[10px] text-slate-400 mt-0.5">Salvo em <code class="font-mono bg-white px-1 py-0.5 rounded text-emerald-600">/public/aulas/audios/</code></p>
+                    </div>
+
+                    <div id="mod_box_url_audio" class="hidden sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Link / URL do Áudio</label>
+                        <input type="text" id="modulo_audio_url" name="audio_url" placeholder="https://exemplo.com/audio.mp3" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Duração e Botões -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Duração Estimada do Módulo (Minutos)</label>
+                    <input type="number" id="modulo_duracao_minutos" name="duracao_minutos" value="20" placeholder="Ex: 25" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
             </div>
 
             <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
                 <button type="button" onclick="fecharModal('modal-modulo-crud')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancelar</button>
-                <button type="submit" class="px-6 py-2.5 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white rounded-xl text-xs font-bold shadow-md">Salvar Módulo</button>
+                <button type="submit" class="px-8 py-2.5 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white rounded-xl text-xs font-bold shadow-md">Salvar Módulo com Conteúdo</button>
             </div>
         </form>
     </div>
@@ -2426,7 +2591,7 @@ require_once ROOT_PATH . '/components/common/logo.php';
 <!-- 4. MODAL CRUD AULA (EDITOR RICO ESTILO WORDPRESS - Referência: image_f0a333.jpg) -->
 <!-- ==================================================================== -->
 <div id="modal-aula-crud" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[96vh] overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-5xl w-full p-6 sm:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[96vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-xl bg-orange-50 text-[#FF8A00] flex items-center justify-center">
@@ -2434,7 +2599,7 @@ require_once ROOT_PATH . '/components/common/logo.php';
                 </div>
                 <div>
                     <h3 id="modal-aula-title" class="font-heading font-bold text-lg text-slate-900">Editar Aula</h3>
-                    <p class="text-[11px] text-slate-400">Editor visual estilo WordPress com formatação, vídeos e anexos.</p>
+                    <p class="text-[11px] text-slate-400">Editor visual estilo WordPress / TinyMCE com formatação, vídeos, áudios e anexos.</p>
                 </div>
             </div>
             <button onclick="fecharModal('modal-aula-crud')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
@@ -2459,7 +2624,7 @@ require_once ROOT_PATH . '/components/common/logo.php';
             <!-- ========================================================= -->
             <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
                 <!-- Barra de Ferramentas WordPress -->
-                <div class="bg-slate-100 p-2 border-b border-slate-200 flex flex-wrap items-center justify-between gap-1.5 select-none">
+                <div class="bg-slate-100 p-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-1.5 select-none">
                     <div class="flex flex-wrap items-center gap-1">
                         <!-- Headings Dropdown -->
                         <select onchange="formatAulaBlock(this.value); this.selectedIndex=0;" class="px-2 py-1 bg-white border border-slate-300 rounded text-xs font-medium cursor-pointer">
@@ -2689,20 +2854,134 @@ function abrirModalModulo(cursoId) {
     document.getElementById('modulo_curso_id').value = cursoId;
     document.getElementById('modulo_titulo').value = '';
     document.getElementById('modulo_descricao').value = '';
+    document.getElementById('modulo_editor_visual').innerHTML = '<p>Escreva o conteúdo textual, referências, orientações didáticas e conceitos para este módulo...</p>';
+    document.getElementById('modulo_editor_html').value = '';
+    document.getElementById('modulo_tipo_video').value = 'youtube';
+    toggleModuloVideoInputs('youtube');
+    document.getElementById('modulo_url_video').value = '';
+    document.getElementById('modulo_tipo_audio').value = 'nenhum';
+    toggleModuloAudioInputs('nenhum');
+    document.getElementById('modulo_audio_url').value = '';
+    document.getElementById('modulo_duracao_minutos').value = '20';
     document.getElementById('modulo_ordem').value = '0';
+    toggleModuloEditorMode('visual');
     abrirModal('modal-modulo-crud');
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
 
 function editarModulo(m) {
-    document.getElementById('modal-modulo-title').innerText = 'Editar Módulo';
+    document.getElementById('modal-modulo-title').innerText = 'Editar Módulo do Curso';
     document.getElementById('modulo_id').value = m.id || '';
     document.getElementById('modulo_curso_id').value = m.curso_id || '';
     document.getElementById('modulo_titulo').value = m.titulo || '';
     document.getElementById('modulo_descricao').value = m.descricao || '';
+    
+    const content = m.conteudo || '<p></p>';
+    document.getElementById('modulo_editor_visual').innerHTML = content;
+    document.getElementById('modulo_editor_html').value = content;
+    
+    const tipoVid = m.tipo_video || (m.url_video ? 'youtube' : 'nenhum');
+    document.getElementById('modulo_tipo_video').value = tipoVid;
+    toggleModuloVideoInputs(tipoVid);
+    document.getElementById('modulo_url_video').value = m.url_video || '';
+
+    const tipoAud = m.tipo_audio || (m.audio_url ? 'link' : 'nenhum');
+    document.getElementById('modulo_tipo_audio').value = tipoAud;
+    toggleModuloAudioInputs(tipoAud);
+    document.getElementById('modulo_audio_url').value = m.audio_url || '';
+
+    document.getElementById('modulo_duracao_minutos').value = m.duracao_minutos || 20;
     document.getElementById('modulo_ordem').value = m.ordem || 0;
+    
+    toggleModuloEditorMode('visual');
     abrirModal('modal-modulo-crud');
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function toggleModuloVideoInputs(tipo) {
+    const boxUrl = document.getElementById('mod_box_url_video');
+    const boxUp = document.getElementById('mod_box_upload_video');
+    if (tipo === 'upload') {
+        if (boxUrl) boxUrl.classList.add('hidden');
+        if (boxUp) boxUp.classList.remove('hidden');
+    } else if (tipo === 'nenhum') {
+        if (boxUrl) boxUrl.classList.add('hidden');
+        if (boxUp) boxUp.classList.add('hidden');
+    } else {
+        if (boxUrl) boxUrl.classList.remove('hidden');
+        if (boxUp) boxUp.classList.add('hidden');
+    }
+}
+
+function toggleModuloAudioInputs(tipo) {
+    const boxUp = document.getElementById('mod_box_upload_audio');
+    const boxUrl = document.getElementById('mod_box_url_audio');
+    if (tipo === 'upload') {
+        if (boxUp) boxUp.classList.remove('hidden');
+        if (boxUrl) boxUrl.classList.add('hidden');
+    } else if (tipo === 'link') {
+        if (boxUp) boxUp.classList.add('hidden');
+        if (boxUrl) boxUrl.classList.remove('hidden');
+    } else {
+        if (boxUp) boxUp.classList.add('hidden');
+        if (boxUrl) boxUrl.classList.add('hidden');
+    }
+}
+
+// Funções WYSIWYG do Módulo
+function execModuloCmd(command, value = null) {
+    document.execCommand(command, false, value);
+    document.getElementById('modulo_editor_visual').focus();
+}
+
+function formatModuloBlock(tag) {
+    if (tag) {
+        document.execCommand('formatBlock', false, tag);
+        document.getElementById('modulo_editor_visual').focus();
+    }
+}
+
+function inserirLinkModulo() {
+    const url = prompt('Digite o endereço do Link (URL):', 'https://');
+    if (url) {
+        document.execCommand('createLink', false, url);
+    }
+}
+
+let isModuloHtmlMode = false;
+function toggleModuloEditorMode(mode) {
+    const visualArea = document.getElementById('modulo_editor_visual');
+    const htmlArea = document.getElementById('modulo_editor_html');
+    const btnVisual = document.getElementById('btn-mod-mode-visual');
+    const btnHtml = document.getElementById('btn-mod-mode-html');
+
+    if (mode === 'html' && !isModuloHtmlMode) {
+        htmlArea.value = visualArea.innerHTML;
+        visualArea.classList.add('hidden');
+        htmlArea.classList.remove('hidden');
+        btnHtml.classList.add('bg-[#0D5BA8]', 'text-white');
+        btnHtml.classList.remove('bg-slate-200', 'text-slate-700');
+        btnVisual.classList.remove('bg-[#0D5BA8]', 'text-white');
+        btnVisual.classList.add('bg-slate-200', 'text-slate-700');
+        isModuloHtmlMode = true;
+    } else if (mode === 'visual' && isModuloHtmlMode) {
+        visualArea.innerHTML = htmlArea.value;
+        htmlArea.classList.add('hidden');
+        visualArea.classList.remove('hidden');
+        btnVisual.classList.add('bg-[#0D5BA8]', 'text-white');
+        btnVisual.classList.remove('bg-slate-200', 'text-slate-700');
+        btnHtml.classList.remove('bg-[#0D5BA8]', 'text-white');
+        btnHtml.classList.add('bg-slate-200', 'text-slate-700');
+        isModuloHtmlMode = false;
+    }
+}
+
+function syncModuloContent() {
+    if (isModuloHtmlMode) {
+        document.getElementById('modulo_conteudo_hidden').value = document.getElementById('modulo_editor_html').value;
+    } else {
+        document.getElementById('modulo_conteudo_hidden').value = document.getElementById('modulo_editor_visual').innerHTML;
+    }
 }
 
 function toggleVideoInputs(tipo) {
@@ -2813,6 +3092,7 @@ function editarAula(a, cursoId) {
     document.getElementById('aula_tipo_video').value = tipoVid;
     toggleVideoInputs(tipoVid);
     document.getElementById('aula_url_video').value = a.url_video || '';
+
     document.getElementById('aula_duracao_minutos').value = a.duracao_minutos || 10;
     document.getElementById('aula_ordem').value = a.ordem || 0;
     document.getElementById('aula_status').value = a.status || 'publicado';

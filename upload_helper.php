@@ -400,3 +400,40 @@ function upload_aula_anexo($fileArray, $tituloAula, $id = 0) {
 
     return ['success' => false, 'message' => 'Falha ao salvar anexo em /public/aulas/anexos/'];
 }
+
+/**
+ * Processa upload de áudio direto de aula/módulo salvando em /public/aulas/audios/{titulo_sanitizado}_{id}.mp3
+ */
+function upload_aula_audio($fileArray, $tituloAula, $id = 0) {
+    if (!isset($fileArray) || $fileArray['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'Nenhum áudio enviado ou erro no upload.'];
+    }
+
+    $targetDir = ROOT_PATH . '/public/aulas/audios';
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0755, true);
+    }
+
+    $ext = pathinfo($fileArray['name'], PATHINFO_EXTENSION);
+    $ext = strtolower($ext ?: 'mp3');
+    if (!in_array($ext, ['mp3', 'wav', 'ogg', 'm4a', 'aac'])) {
+        $ext = 'mp3';
+    }
+
+    $tituloSanitizado = sanitize_file_name($tituloAula);
+    $filename = $tituloSanitizado . '_' . ($id ?: time()) . '.' . $ext;
+    $targetPath = $targetDir . '/' . $filename;
+    $relativePath = 'public/aulas/audios/' . $filename;
+
+    if (move_uploaded_file($fileArray['tmp_name'], $targetPath)) {
+        return [
+            'success' => true,
+            'path' => $relativePath,
+            'filename' => $filename,
+            'message' => 'Arquivo de áudio salvo em /public/aulas/audios/ com sucesso!'
+        ];
+    }
+
+    return ['success' => false, 'message' => 'Falha ao salvar áudio em /public/aulas/audios/'];
+}
+

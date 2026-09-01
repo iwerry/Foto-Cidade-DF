@@ -48,6 +48,9 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
+    <!-- TinyMCE Rich Text Editor CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js" referrerpolicy="origin"></script>
+
     <!-- Custom JS -->
     <script src="assets/js/main.js?v=<?php echo time(); ?>" defer></script>
     <script src="assets/js/map.js?v=<?php echo time(); ?>" defer></script>

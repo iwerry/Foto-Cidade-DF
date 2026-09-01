@@ -572,11 +572,36 @@ function get_artistas() {
  */
 
 /**
+ * Garante que colunas adicionais para mídias em módulos e aulas existam
+ */
+function check_and_migrate_lms_schema($pdo) {
+    if (!$pdo) return;
+    static $migrated = false;
+    if ($migrated) return;
+
+    try {
+        // Colunas multimídia para modulos
+        @$pdo->exec("ALTER TABLE `modulos` ADD COLUMN `conteudo` LONGTEXT AFTER `descricao`");
+        @$pdo->exec("ALTER TABLE `modulos` ADD COLUMN `tipo_video` VARCHAR(50) DEFAULT 'nenhum' AFTER `conteudo`");
+        @$pdo->exec("ALTER TABLE `modulos` ADD COLUMN `url_video` VARCHAR(255) DEFAULT NULL AFTER `tipo_video`");
+        @$pdo->exec("ALTER TABLE `modulos` ADD COLUMN `tipo_audio` VARCHAR(50) DEFAULT 'nenhum' AFTER `url_video`");
+        @$pdo->exec("ALTER TABLE `modulos` ADD COLUMN `audio_url` VARCHAR(255) DEFAULT NULL AFTER `tipo_audio`");
+        @$pdo->exec("ALTER TABLE `modulos` ADD COLUMN `duracao_minutos` INT DEFAULT 0 AFTER `audio_url`");
+
+        // Colunas de áudio para aulas
+        @$pdo->exec("ALTER TABLE `aulas` ADD COLUMN `tipo_audio` VARCHAR(50) DEFAULT 'nenhum' AFTER `url_video`");
+        @$pdo->exec("ALTER TABLE `aulas` ADD COLUMN `audio_url` VARCHAR(255) DEFAULT NULL AFTER `tipo_audio`");
+    } catch (Exception $e) {}
+    $migrated = true;
+}
+
+/**
  * Retorna todas as Trilhas cadastradas
  */
 function get_all_trilhas() {
     $pdo = get_db_connection();
     if (!$pdo) return [];
+    check_and_migrate_lms_schema($pdo);
 
     try {
         $stmt = $pdo->query("SELECT * FROM `trilhas_cursos` ORDER BY `ordem` ASC, `id` ASC");
@@ -586,6 +611,7 @@ function get_all_trilhas() {
         return [];
     }
 }
+
 
 /**
  * Retorna todos os cursos (com opção de filtrar por trilha_id)
