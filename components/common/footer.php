@@ -10,7 +10,7 @@
             <!-- Column 1: Brand & Slogan -->
             <div class="lg:col-span-2 space-y-4">
                 <div class="inline-block">
-                    <?php render_logo('lg', true, 'index.php', '', 'full'); ?>
+                    <?php render_logo('lg', true, 'index.php', '', 'white'); ?>
                 </div>
                 <p class="text-slate-300 text-sm leading-relaxed max-w-md">
                     Uma trilha de formação em Mapeamento Territorial, Produção Cultural e Comunicação Comunitária. 
