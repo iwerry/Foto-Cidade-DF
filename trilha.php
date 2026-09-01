@@ -29,14 +29,16 @@ if ($loggedUser) {
 
 $selectedEixoId = isset($_GET['eixo']) ? (int)$_GET['eixo'] : 1;
 $currentEixo = null;
-foreach ($trilhas as $t) {
-    if ($t['id'] === $selectedEixoId) {
-        $currentEixo = $t;
-        break;
+if (!empty($trilhas)) {
+    foreach ($trilhas as $t) {
+        if ($t['id'] === $selectedEixoId) {
+            $currentEixo = $t;
+            break;
+        }
     }
-}
-if (!$currentEixo) {
-    $currentEixo = $trilhas[0];
+    if (!$currentEixo) {
+        $currentEixo = $trilhas[0];
+    }
 }
 
 require_once ROOT_PATH . '/components/common/head.php';
@@ -46,23 +48,43 @@ require_once ROOT_PATH . '/components/common/navbar.php';
 <main class="flex-1 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <!-- Top Eixo Switcher Tabs -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-4 mb-6 border-b border-slate-200">
-            <?php foreach ($trilhas as $eixo): 
-                $isSelected = ($currentEixo['id'] === $eixo['id']);
-            ?>
-                <a href="trilha.php?eixo=<?php echo $eixo['id']; ?>"
-                   class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all flex items-center gap-2 <?php echo $isSelected ? 'bg-[#0D5BA8] text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'; ?>">
-                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] <?php echo $isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'; ?>">
-                        <?php echo $eixo['id']; ?>
-                    </span>
-                    <span><?php echo htmlspecialchars($eixo['titulo']); ?></span>
-                    <span class="text-[10px] px-1.5 py-0.5 rounded <?php echo $isSelected ? 'bg-white/20' : 'bg-slate-100 text-slate-500'; ?>">
-                        <?php echo htmlspecialchars($eixo['cargaHoraria']); ?>
-                    </span>
-                </a>
-            <?php endforeach; ?>
-        </div>
+        <?php if (empty($trilhas)): ?>
+            <!-- Empty State quando não há cursos cadastrados -->
+            <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-2xl mx-auto shadow-xs space-y-4 my-8">
+                <div class="w-16 h-16 bg-blue-50 text-[#0D5BA8] rounded-2xl flex items-center justify-center mx-auto">
+                    <i data-lucide="book-open" class="w-8 h-8"></i>
+                </div>
+                <h2 class="font-heading font-bold text-2xl text-slate-900">Trilhas de Aprendizado</h2>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Nenhuma trilha de formação ou curso ativo no momento. Fique atento aos novos módulos e turmas de formação que serão abertos pela coordenação do FotoCidade DF.
+                </p>
+                <div class="pt-4 flex items-center justify-center gap-3">
+                    <a href="index.php" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors">
+                        Voltar ao Início
+                    </a>
+                    <a href="vitrine.php" class="px-5 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+                        Conhecer a Vitrine
+                    </a>
+                </div>
+            </div>
+        <?php else: ?>
+            <!-- Top Eixo Switcher Tabs -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-4 mb-6 border-b border-slate-200">
+                <?php foreach ($trilhas as $eixo): 
+                    $isSelected = ($currentEixo['id'] === $eixo['id']);
+                ?>
+                    <a href="trilha.php?eixo=<?php echo $eixo['id']; ?>"
+                       class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all flex items-center gap-2 <?php echo $isSelected ? 'bg-[#0D5BA8] text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'; ?>">
+                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] <?php echo $isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'; ?>">
+                            <?php echo $eixo['id']; ?>
+                        </span>
+                        <span><?php echo htmlspecialchars($eixo['titulo']); ?></span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded <?php echo $isSelected ? 'bg-white/20' : 'bg-slate-100 text-slate-500'; ?>">
+                            <?php echo htmlspecialchars($eixo['cargaHoraria']); ?>
+                        </span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
 
         <!-- Student Portal Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -258,6 +280,7 @@ require_once ROOT_PATH . '/components/common/navbar.php';
             </div>
 
         </div>
+        <?php endif; ?>
 
     </div>
 </main>

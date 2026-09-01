@@ -91,42 +91,26 @@ require_once ROOT_PATH . '/components/cards/artist_card.php';
         </div>
     </section>
 
-    <!-- Eixos Formativos Section -->
+    <!-- Trilhas & Formação Section -->
     <section class="py-16 bg-white border-b border-slate-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center max-w-3xl mx-auto mb-12">
-                <span class="text-xs font-bold uppercase tracking-widest text-[#00A7B5] bg-teal-50 px-3.5 py-1 rounded-full">Metodologia</span>
-                <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-2 font-heading">Quatro Eixos para Transformar</h2>
-                <p class="text-slate-600 text-sm mt-3">A trilha combina teoria e prática de campo para capacitar agentes culturais no DF.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-[#0D5BA8] hover:shadow-md transition-all">
-                    <div class="w-12 h-12 bg-blue-100 text-[#0D5BA8] rounded-xl flex items-center justify-center font-bold text-lg mb-4">I</div>
-                    <h3 class="text-base font-bold text-slate-900 font-heading">Mapeamento Territorial</h3>
-                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">Cartografia afetiva, identificação de patrimônios e pontos de memória da comunidade.</p>
-                    <span class="inline-block mt-4 text-[11px] font-bold text-[#0D5BA8]">20 horas presenciais</span>
-                </div>
-
-                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-[#00A7B5] hover:shadow-md transition-all">
-                    <div class="w-12 h-12 bg-teal-100 text-[#00A7B5] rounded-xl flex items-center justify-center font-bold text-lg mb-4">II</div>
-                    <h3 class="text-base font-bold text-slate-900 font-heading">Fotografia & Audiovisual</h3>
-                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">Técnicas de enquadramento, olhar periférico e produção de ensaios visuais com celular.</p>
-                    <span class="inline-block mt-4 text-[11px] font-bold text-[#00A7B5]">14 horas de prática</span>
-                </div>
-
-                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-[#FF8A00] hover:shadow-md transition-all">
-                    <div class="w-12 h-12 bg-orange-100 text-[#FF8A00] rounded-xl flex items-center justify-center font-bold text-lg mb-4">III</div>
-                    <h3 class="text-base font-bold text-slate-900 font-heading">Comunicação Comunitária</h3>
-                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">Redação de pautas, redes sociais para coletivos e jornalismo de bairro independente.</p>
-                    <span class="inline-block mt-4 text-[11px] font-bold text-[#FF8A00]">10 horas integradas</span>
-                </div>
-
-                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-[#FFC107] hover:shadow-md transition-all">
-                    <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center font-bold text-lg mb-4">IV</div>
-                    <h3 class="text-base font-bold text-slate-900 font-heading">Produção Cultural</h3>
-                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">Elaboração de projetos, portfólio cultural e articulação intersetorial no DF.</p>
-                    <span class="inline-block mt-4 text-[11px] font-bold text-amber-600">12 horas de laboratório</span>
+            <div class="bg-gradient-to-r from-blue-900 via-[#0D5BA8] to-teal-800 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                <div class="relative z-10 max-w-2xl space-y-4">
+                    <span class="text-xs font-bold uppercase tracking-widest text-[#FFC107] bg-white/10 px-3.5 py-1 rounded-full border border-white/20">Formação Comunitária</span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold font-heading">Trilhas de Aprendizado & Oficinas</h2>
+                    <p class="text-slate-100 text-sm sm:text-base leading-relaxed">
+                        Cursos práticos e imersões presenciais que capacitam agentes culturais, moradores e pesquisadores populares para mapear o território, produzir narrativas visuais e articular projetos de impacto no DF.
+                    </p>
+                    <div class="pt-2 flex flex-wrap items-center gap-3">
+                        <button onclick="openModal('modal-inscription')" class="px-6 py-3 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center gap-2">
+                            <span>Quero Participar das Turmas</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                        <a href="trilha.php" class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs border border-white/30 transition-all">
+                            Conhecer as Trilhas
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

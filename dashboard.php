@@ -1221,60 +1221,35 @@ require_once ROOT_PATH . '/components/common/logo.php';
             <div class="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-6 p-6 animate-in fade-in duration-200">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                     <div>
-                        <h2 class="font-heading font-bold text-xl text-slate-900">Trilhas de Formação & Missões Práticas</h2>
-                        <p class="text-xs text-slate-500">Gestão dos 4 eixos formativos e missões práticas para os alunos da periferia.</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="abrirModalEixo()" class="px-3.5 py-2 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer">
-                            <i data-lucide="folder-plus" class="w-4 h-4"></i>
-                            <span>Novo Eixo</span>
-                        </button>
-                        <button onclick="abrirModalMissao()" class="px-3.5 py-2 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                            <span>Nova Missão</span>
-                        </button>
+                        <h2 class="font-heading font-bold text-xl text-slate-900">Cursos & Trilhas de Aprendizado</h2>
+                        <p class="text-xs text-slate-500">Gestão dos cursos de formação do FotoCidade DF. Conjuntos de cursos compõem as Trilhas de Formação.</p>
                     </div>
                 </div>
 
-                <div class="space-y-6">
-                    <?php foreach ($trilhasList as $eixo): ?>
-                        <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50 space-y-4">
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                                <div>
-                                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#0D5BA8]">Eixo <?php echo $eixo['numero']; ?></span>
-                                    <h3 class="font-bold text-slate-900 text-base"><?php echo htmlspecialchars($eixo['titulo']); ?></h3>
-                                    <p class="text-xs text-slate-500"><?php echo htmlspecialchars($eixo['descricao']); ?></p>
-                                </div>
-                                <div class="flex items-center gap-2 text-xs font-bold">
-                                    <span class="px-2.5 py-1 bg-white rounded-lg border border-slate-200 text-slate-600">
-                                        <?php echo count($eixo['missoes']); ?> missões
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <?php foreach ($eixo['missoes'] as $m): ?>
-                                    <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-start justify-between gap-2 shadow-xs">
-                                        <div class="space-y-1">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-5 h-5 rounded-full bg-blue-100 text-[#0D5BA8] text-[10px] font-bold flex items-center justify-center">
-                                                    <?php echo $m['numeroMissao']; ?>
-                                                </span>
-                                                <h4 class="font-bold text-slate-800 text-xs"><?php echo htmlspecialchars($m['titulo']); ?></h4>
-                                            </div>
-                                            <p class="text-[11px] text-slate-500 line-clamp-2"><?php echo htmlspecialchars($m['descricaoCurta']); ?></p>
-                                            <div class="flex items-center gap-2 text-[10px] text-slate-400 pt-1">
-                                                <span>⏱ <?php echo htmlspecialchars($m['duracaoHoras']); ?>h</span>
-                                                <span>•</span>
-                                                <span>📅 <?php echo htmlspecialchars($m['prazo']); ?></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
+                <?php if (empty($trilhasList)): ?>
+                    <div class="text-center py-16 px-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <div class="w-16 h-16 bg-blue-50 text-[#0D5BA8] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="book-open" class="w-8 h-8"></i>
                         </div>
-                    <?php endforeach; ?>
-                </div>
+                        <h3 class="font-heading font-bold text-slate-800 text-lg">Nenhum Curso ou Trilha Cadastrado</h3>
+                        <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                            Os dados fictícios foram removidos. Em breve o administrador poderá criar cursos e organizá-los diretamente em Trilhas de Formação.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <div class="space-y-6">
+                        <?php foreach ($trilhasList as $trilhaItem): ?>
+                            <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50 space-y-4">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                                    <div>
+                                        <h3 class="font-bold text-slate-900 text-base"><?php echo htmlspecialchars($trilhaItem['titulo']); ?></h3>
+                                        <p class="text-xs text-slate-500"><?php echo htmlspecialchars($trilhaItem['descricao'] ?? ''); ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 

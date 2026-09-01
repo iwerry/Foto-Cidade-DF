@@ -621,5 +621,6 @@ function get_trilhas() {
         }
     }
 
-    return get_json_data('trilhas');
+    return [];
 }
+
