@@ -11,24 +11,26 @@ function render_logo($size = 'md', $showSlogan = true, $linkUrl = 'index.php', $
         $variant = $isLogged ? 'compact' : 'full';
     }
 
-    $isCompact = ($variant === 'compact' || $variant === 'menu' || $size === 'sm' || !$showSlogan);
+    $isCompact = ($variant === 'compact' || $variant === 'menu' || !$showSlogan);
     $logoSrc = $isCompact ? 'public/LogoMenus.png' : 'public/LogoNavBar.png';
     
-    $heightClass = 'h-10 sm:h-12';
+    // Dimensões proporcionais e destacadas no layout
+    $heightClass = 'h-14 sm:h-16';
     if ($isCompact) {
-        $heightClass = 'h-8 sm:h-9';
+        $heightClass = 'h-11 sm:h-12';
     } elseif ($size === 'lg') {
-        $heightClass = 'h-12 sm:h-14';
+        $heightClass = 'h-16 sm:h-20';
     } elseif ($size === 'sm') {
-        $heightClass = 'h-8 sm:h-9';
+        $heightClass = 'h-10 sm:h-11';
     }
     ?>
     <a href="<?php echo htmlspecialchars($linkUrl); ?>" class="inline-flex items-center select-none group <?php echo htmlspecialchars($extraClass); ?>">
         <img src="<?php echo htmlspecialchars($logoSrc); ?>" 
              onerror="this.src='public/LogoNavBar.png'"
              alt="FotoCidade DF" 
-             class="<?php echo $heightClass; ?> w-auto object-contain transition-transform duration-200 group-hover:scale-102" />
+             class="<?php echo $heightClass; ?> w-auto object-contain transition-transform duration-200 group-hover:scale-105" />
     </a>
     <?php
 }
+
 
