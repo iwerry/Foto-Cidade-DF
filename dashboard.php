@@ -749,6 +749,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $abaAtiva = 'cursos';
         }
 
+        elseif ($action === 'reordenar_modulos') {
+            $cursoId = (int)($_POST['curso_id'] ?? 0);
+            $modulosOrdem = $_POST['modulos_ordem'] ?? [];
+            if (is_string($modulosOrdem)) {
+                $modulosOrdem = json_decode($modulosOrdem, true) ?: explode(',', $modulosOrdem);
+            }
+            if ($pdo && !empty($modulosOrdem)) {
+                try {
+                    $stmt = $pdo->prepare("UPDATE `modulos` SET ordem = ? WHERE id = ?");
+                    foreach ($modulosOrdem as $ordemIndex => $modId) {
+                        $stmt->execute([$ordemIndex + 1, (int)$modId]);
+                    }
+                    if (!empty($_POST['is_ajax']) || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)) {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => true, 'message' => 'Ordem atualizada com sucesso!']);
+                        exit;
+                    }
+                    $mensagemSucesso = 'Ordem dos módulos atualizada com sucesso!';
+                } catch (Exception $e) {
+                    if (!empty($_POST['is_ajax'])) {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                        exit;
+                    }
+                    $mensagemErro = 'Erro ao reordenar módulos: ' . $e->getMessage();
+                }
+            }
+            $abaAtiva = 'cursos';
+        }
+
         elseif ($action === 'salvar_aula') {
             $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
             $moduloId = (int)$_POST['modulo_id'];
@@ -1593,24 +1623,71 @@ require_once ROOT_PATH . '/components/common/logo.php';
                                 </p>
                             </div>
                         <?php else: ?>
-                            <!-- Detalhes do Curso Selecionado -->
+                            <!-- Detalhes do Curso Selecionado com Banner da Imagem de Capa -->
                             <div class="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-                                <div class="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div>
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-[#FFC107] bg-white/10 px-2.5 py-1 rounded-full border border-white/20">
-                                            <?php echo htmlspecialchars($cursoAtivoDetalhes['trilha_titulo'] ?? 'Curso Avulso'); ?>
-                                        </span>
-                                        <h3 class="font-heading font-extrabold text-xl text-white mt-2"><?php echo htmlspecialchars($cursoAtivoDetalhes['titulo']); ?></h3>
-                                        <p class="text-xs text-slate-300 mt-1"><?php echo htmlspecialchars($cursoAtivoDetalhes['descricao'] ?? ''); ?></p>
+                                <!-- Banner com a Imagem de Capa do Curso -->
+                                <div class="relative min-h-[170px] bg-slate-950 flex flex-col justify-end p-6 sm:p-8 text-white overflow-hidden">
+                                    <!-- Imagem de Fundo da Capa -->
+                                    <img src="<?php echo htmlspecialchars($cursoAtivoDetalhes['capa_url'] ?: 'assets/images/oficina-olhar-fercal.jpg'); ?>"
+                                         onerror="this.src='assets/images/oficina-olhar-fercal.jpg'"
+                                         class="absolute inset-0 w-full h-full object-cover opacity-35 blur-[1px]" />
+                                    
+                                    <!-- Gradiente de Sobreposição Elegante -->
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-900/30"></div>
+
+                                    <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-5">
+                                        <div class="flex items-start gap-4">
+                                            <!-- Miniatura da Capa com Acesso Rápido à Edição -->
+                                            <div class="relative group cursor-pointer shrink-0" onclick='editarCurso(<?php echo json_encode($cursoAtivoDetalhes); ?>)'>
+                                                <img src="<?php echo htmlspecialchars($cursoAtivoDetalhes['capa_url'] ?: 'assets/images/oficina-olhar-fercal.jpg'); ?>"
+                                                     onerror="this.src='assets/images/oficina-olhar-fercal.jpg'"
+                                                     class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-white/30 shadow-lg group-hover:opacity-80 transition-opacity" />
+                                                <div class="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] font-bold text-white transition-opacity">
+                                                    <i data-lucide="camera" class="w-4 h-4 mb-0.5"></i>
+                                                    <span>Alterar Foto</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="space-y-1.5 min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#FFC107] bg-black/40 px-2.5 py-0.5 rounded-full border border-amber-400/30 backdrop-blur-xs">
+                                                        <?php echo htmlspecialchars($cursoAtivoDetalhes['trilha_titulo'] ?? 'Curso Avulso'); ?>
+                                                    </span>
+                                                    <span class="text-[10px] font-bold text-slate-300 bg-white/10 px-2 py-0.5 rounded-full">
+                                                        ⏱ <?php echo htmlspecialchars($cursoAtivoDetalhes['carga_horaria'] ?? '14h'); ?>
+                                                    </span>
+                                                </div>
+                                                <h3 class="font-heading font-black text-xl sm:text-2xl text-white tracking-tight"><?php echo htmlspecialchars($cursoAtivoDetalhes['titulo']); ?></h3>
+                                                <p class="text-xs text-slate-300 line-clamp-2 max-w-xl leading-relaxed"><?php echo htmlspecialchars($cursoAtivoDetalhes['descricao'] ?? ''); ?></p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <button onclick='editarCurso(<?php echo json_encode($cursoAtivoDetalhes); ?>)' class="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-xs border border-white/20 transition-all flex items-center gap-1.5" title="Editar Informações e Capa">
+                                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                                <span>Editar Capa</span>
+                                            </button>
+                                            <button onclick="abrirModalModulo(<?php echo $cursoAtivoDetalhes['id']; ?>)" class="px-5 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-bold text-xs rounded-xl shadow-lg transition-all hover:scale-105 flex items-center gap-2 cursor-pointer">
+                                                <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                                                <span>+ Novo Módulo</span>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button onclick="abrirModalModulo(<?php echo $cursoAtivoDetalhes['id']; ?>)" class="px-4 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 shrink-0 cursor-pointer">
-                                        <i data-lucide="folder-plus" class="w-4 h-4"></i>
-                                        <span>+ Novo Módulo</span>
-                                    </button>
                                 </div>
 
-                                <!-- Acordeão de Módulos (Referência: image_f0ab2f.jpg / image_f0ab6d.png) -->
-                                <div class="p-6 space-y-4">
+                                <!-- Instrução de Arrastar / Mover Módulos -->
+                                <div class="px-6 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-blue-600"></i>
+                                        <span class="font-semibold">Reorganização: Você pode arrastar pelo pegador <b class="font-mono text-slate-700 font-black">⠿</b> ou usar as setas ▲/▼ para mudar a ordem dos módulos facilmente.</span>
+                                    </div>
+                                    <span id="toast-ordem-status" class="hidden text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Ordem salva!
+                                    </span>
+                                </div>
+
+                                <!-- Acordeão de Módulos (Reordenável com Drag & Drop / Setas) -->
+                                <div class="p-6 space-y-4" id="modulos-sortable-list" data-curso-id="<?php echo $cursoAtivoDetalhes['id']; ?>">
                                     <?php if (empty($cursoAtivoDetalhes['modulos'])): ?>
                                         <div class="p-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 space-y-2">
                                             <p class="text-xs font-bold text-slate-700">Este curso ainda não possui módulos cadastrados.</p>
@@ -1621,19 +1698,31 @@ require_once ROOT_PATH . '/components/common/logo.php';
                                         </div>
                                     <?php else: ?>
                                         <?php foreach ($cursoAtivoDetalhes['modulos'] as $idx => $mod): ?>
-                                            <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50">
-                                                <!-- Cabeçalho do Módulo -->
+                                            <div class="modulo-item-card border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50 shadow-2xs transition-all duration-200" data-modulo-id="<?php echo $mod['id']; ?>" draggable="true">
+                                                <!-- Cabeçalho do Módulo com Pegador e Botões de Subir/Descer -->
                                                 <div class="p-4 bg-white border-b border-slate-100 flex items-center justify-between gap-4">
-                                                    <div class="flex items-center gap-3">
-                                                        <span class="w-7 h-7 rounded-full bg-blue-100 text-[#0D5BA8] font-black text-xs flex items-center justify-center shrink-0">
+                                                    <div class="flex items-center gap-3 min-w-0">
+                                                        <!-- Pegador Drag Handle -->
+                                                        <div class="cursor-grab active:cursor-grabbing p-1.5 text-slate-300 hover:text-slate-700 hover:bg-slate-100 rounded-lg select-none drag-handle" title="Segure e arraste para reordenar este módulo">
+                                                            <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+                                                        </div>
+
+                                                        <!-- Setas Rápidas de Subir / Descer -->
+                                                        <div class="flex flex-col gap-0.5 select-none">
+                                                            <button type="button" onclick="moverModuloCard(this, 'up')" class="p-0.5 hover:bg-blue-50 text-slate-400 hover:text-[#0D5BA8] rounded leading-none text-[10px] font-bold" title="Mover para Cima">▲</button>
+                                                            <button type="button" onclick="moverModuloCard(this, 'down')" class="p-0.5 hover:bg-blue-50 text-slate-400 hover:text-[#0D5BA8] rounded leading-none text-[10px] font-bold" title="Mover para Baixo">▼</button>
+                                                        </div>
+
+                                                        <span class="modulo-badge-num w-7 h-7 rounded-full bg-blue-100 text-[#0D5BA8] font-black text-xs flex items-center justify-center shrink-0">
                                                             <?php echo str_pad($idx + 1, 2, '0', STR_PAD_LEFT); ?>
                                                         </span>
-                                                        <div>
-                                                            <h4 class="font-heading font-bold text-sm text-slate-900"><?php echo htmlspecialchars($mod['titulo']); ?></h4>
+                                                        <div class="min-w-0">
+                                                            <h4 class="font-heading font-bold text-sm text-slate-900 truncate"><?php echo htmlspecialchars($mod['titulo']); ?></h4>
                                                             <p class="text-[11px] text-slate-400"><?php echo count($mod['aulas']); ?> aulas cadastradas</p>
                                                         </div>
                                                     </div>
-                                                    <div class="flex items-center gap-2">
+                                                    
+                                                    <div class="flex items-center gap-2 shrink-0">
                                                         <button onclick="abrirModalAula(<?php echo $cursoAtivoDetalhes['id']; ?>, <?php echo $mod['id']; ?>)" class="px-3 py-1.5 bg-[#FF8A00]/10 hover:bg-[#FF8A00] text-[#FF8A00] hover:text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1">
                                                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                                                             <span>Nova Aula</span>
@@ -1677,7 +1766,7 @@ require_once ROOT_PATH . '/components/common/logo.php';
                                                                         </div>
                                                                         <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-0.5">
                                                                             <?php if ($aula['duracao_minutos'] > 0): ?>
-                                                                                <span>⏱ <?php echo $aula['duracao_minutos']; ?> min</span>
+                                                                                 <span>⏱ <?php echo $aula['duracao_minutos']; ?> min</span>
                                                                             <?php endif; ?>
                                                                             <?php if (!empty($aula['anexos'])): ?>
                                                                                 <span class="text-blue-600 font-bold">📎 <?php echo count($aula['anexos']); ?> anexo(s)</span>
@@ -2449,24 +2538,26 @@ require_once ROOT_PATH . '/components/common/logo.php';
             </div>
 
             <!-- ========================================================= -->
-            <!-- EDITOR DE CONTEÚDO RICO (WYSIWYG - Estilo WordPress / TinyMCE) -->
+            <!-- EDITOR DE CONTEÚDO RICO (WYSIWYG - Estilo WordPress / TinyMCE Completo) -->
             <!-- ========================================================= -->
             <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-                <!-- Barra de Ferramentas WordPress -->
+                <!-- Barra de Ferramentas WordPress Completa -->
                 <div class="bg-slate-100 p-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-1.5 select-none">
                     <div class="flex flex-wrap items-center gap-1">
                         <!-- Headings Dropdown -->
                         <select onchange="formatModuloBlock(this.value); this.selectedIndex=0;" class="px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs font-medium cursor-pointer">
                             <option value="">Formato do Texto</option>
                             <option value="p">Parágrafo Padrão</option>
-                            <option value="h1">Título 1 (H1)</option>
-                            <option value="h2">Título 2 (H2)</option>
-                            <option value="h3">Título 3 (H3)</option>
+                            <option value="h1">Título Principal (H1)</option>
+                            <option value="h2">Subtítulo (H2)</option>
+                            <option value="h3">Tópico (H3)</option>
                             <option value="blockquote">Citação (Blockquote)</option>
+                            <option value="pre">Bloco de Código (Pre)</option>
                         </select>
 
                         <div class="h-4 w-px bg-slate-300 mx-1"></div>
 
+                        <!-- Estilos Básicos -->
                         <button type="button" onclick="execModuloCmd('bold')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded font-black text-xs" title="Negrito (Ctrl+B)">B</button>
                         <button type="button" onclick="execModuloCmd('italic')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded italic font-serif text-xs" title="Itálico (Ctrl+I)">I</button>
                         <button type="button" onclick="execModuloCmd('underline')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded underline text-xs" title="Sublinhado">U</button>
@@ -2474,13 +2565,40 @@ require_once ROOT_PATH . '/components/common/logo.php';
 
                         <div class="h-4 w-px bg-slate-300 mx-1"></div>
 
+                        <!-- Alinhamentos -->
+                        <button type="button" onclick="execModuloCmd('justifyLeft')" class="px-2 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Alinhar à Esquerda">⇤</button>
+                        <button type="button" onclick="execModuloCmd('justifyCenter')" class="px-2 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs font-bold" title="Centralizar">≡</button>
+                        <button type="button" onclick="execModuloCmd('justifyRight')" class="px-2 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Alinhar à Direita">⇥</button>
+                        <button type="button" onclick="execModuloCmd('justifyFull')" class="px-2 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Justificado">≣</button>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                        <!-- Listas & Citações -->
                         <button type="button" onclick="execModuloCmd('insertUnorderedList')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Lista com Marcadores">• Lista</button>
                         <button type="button" onclick="execModuloCmd('insertOrderedList')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Lista Numerada">1. Lista</button>
                         <button type="button" onclick="execModuloCmd('formatBlock', '<blockquote>')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs font-serif" title="Citação">❝ Citação</button>
 
                         <div class="h-4 w-px bg-slate-300 mx-1"></div>
 
-                        <button type="button" onclick="inserirLinkModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-blue-600 font-bold" title="Inserir Link">🔗 Inserir Link</button>
+                        <!-- Inserções no Meio do Texto: Link, Imagem, Vídeo, Tabela, Divisória -->
+                        <button type="button" onclick="inserirLinkModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-blue-600 font-bold flex items-center gap-1" title="Inserir Link">🔗 Link</button>
+                        <button type="button" onclick="inserirImagemModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-emerald-700 font-bold flex items-center gap-1" title="Inserir Imagem no Texto">🖼️ Imagem</button>
+                        <button type="button" onclick="inserirVideoEmbedModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-rose-600 font-bold flex items-center gap-1" title="Inserir Vídeo Incorporado no Texto">🎬 Vídeo</button>
+                        <button type="button" onclick="inserirTabelaModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-purple-600 font-bold flex items-center gap-1" title="Inserir Tabela">📊 Tabela</button>
+                        <button type="button" onclick="execModuloCmd('insertHorizontalRule')" class="px-2 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs font-bold" title="Linha Divisória">―</button>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
+                        <!-- Cores de Texto e Realce -->
+                        <label class="flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-[11px] cursor-pointer" title="Cor do Texto">
+                            <span>A</span>
+                            <input type="color" onchange="execModuloCmd('foreColor', this.value)" class="w-4 h-4 border-0 p-0 cursor-pointer rounded">
+                        </label>
+                        <label class="flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 rounded text-[11px] cursor-pointer" title="Cor de Realce (Marca-Texto)">
+                            <span>🖍</span>
+                            <input type="color" value="#FFF59D" onchange="execModuloCmd('hiliteColor', this.value)" class="w-4 h-4 border-0 p-0 cursor-pointer rounded">
+                        </label>
+
                         <button type="button" onclick="execModuloCmd('removeFormat')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-slate-500" title="Limpar Formatação">Tx</button>
                     </div>
 
@@ -2620,7 +2738,7 @@ require_once ROOT_PATH . '/components/common/logo.php';
             </div>
 
             <!-- ========================================================= -->
-            <!-- EDITOR DE CONTEÚDO RICO (WYSIWYG - Estilo WordPress) -->
+            <!-- EDITOR DE CONTEÚDO RICO DA AULA (WYSIWYG - Estilo WordPress Completo) -->
             <!-- ========================================================= -->
             <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
                 <!-- Barra de Ferramentas WordPress -->
@@ -2634,6 +2752,7 @@ require_once ROOT_PATH . '/components/common/logo.php';
                             <option value="h2">Título 2 (H2)</option>
                             <option value="h3">Título 3 (H3)</option>
                             <option value="blockquote">Citação (Blockquote)</option>
+                            <option value="pre">Bloco de Código (Pre)</option>
                         </select>
 
                         <div class="h-4 w-px bg-slate-300 mx-1"></div>
@@ -2644,13 +2763,25 @@ require_once ROOT_PATH . '/components/common/logo.php';
 
                         <div class="h-4 w-px bg-slate-300 mx-1"></div>
 
+                        <!-- Alinhamentos Aula -->
+                        <button type="button" onclick="execAulaCmd('justifyLeft')" class="px-2 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Alinhar à Esquerda">⇤</button>
+                        <button type="button" onclick="execAulaCmd('justifyCenter')" class="px-2 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs font-bold" title="Centralizar">≡</button>
+                        <button type="button" onclick="execAulaCmd('justifyRight')" class="px-2 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Alinhar à Direita">⇥</button>
+
+                        <div class="h-4 w-px bg-slate-300 mx-1"></div>
+
                         <button type="button" onclick="execAulaCmd('insertUnorderedList')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Lista com Marcadores">• Lista</button>
                         <button type="button" onclick="execAulaCmd('insertOrderedList')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs" title="Lista Numerada">1. Lista</button>
                         <button type="button" onclick="execAulaCmd('formatBlock', '<blockquote>')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs font-serif" title="Citação">❝ Citação</button>
 
                         <div class="h-4 w-px bg-slate-300 mx-1"></div>
 
+                        <!-- Inserção de Link, Imagem e Vídeo -->
                         <button type="button" onclick="inserirLinkAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-blue-600 font-bold" title="Inserir Link">🔗 Link</button>
+                        <button type="button" onclick="inserirImagemAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-emerald-700 font-bold" title="Inserir Imagem">🖼️ Imagem</button>
+                        <button type="button" onclick="inserirVideoEmbedAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-rose-600 font-bold" title="Inserir Vídeo">🎬 Vídeo</button>
+                        <button type="button" onclick="inserirTabelaAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-purple-600 font-bold" title="Inserir Tabela">📊 Tabela</button>
+
                         <button type="button" onclick="execAulaCmd('removeFormat')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-slate-500" title="Limpar Formatação">Tx</button>
                     </div>
 
@@ -2667,8 +2798,8 @@ require_once ROOT_PATH . '/components/common/logo.php';
                 </div>
 
                 <!-- Área Código HTML (Oculta por padrão) -->
-                <textarea id="aula_editor_html" rows="8" class="hidden w-full p-4 font-mono text-xs text-slate-800 bg-slate-900 text-slate-100 focus:outline-none leading-relaxed"></textarea>
             </div>
+
 
             <!-- ========================================================= -->
             <!-- CONFIGURAÇÃO DE VÍDEO DA AULA (Link ou Upload MP4) -->
@@ -3021,6 +3152,86 @@ function inserirLinkAula() {
     }
 }
 
+function inserirImagemModulo() {
+    const url = prompt('Digite a URL da imagem ou link local (/public/...):', 'https://');
+    if (url) {
+        const alt = prompt('Descrição/Legenda da imagem:', 'Imagem explicativa');
+        const imgHtml = `<figure class="my-4"><img src="${url}" alt="${alt}" class="rounded-2xl max-w-full shadow-md mx-auto" /><figcaption class="text-center text-xs text-slate-400 mt-1 italic">${alt || ''}</figcaption></figure><p></p>`;
+        document.getElementById('modulo_editor_visual').focus();
+        document.execCommand('insertHTML', false, imgHtml);
+    }
+}
+
+function inserirVideoEmbedModulo() {
+    const url = prompt('Digite o link do vídeo do YouTube ou Vimeo para incorporar no texto:', 'https://www.youtube.com/watch?v=');
+    if (url) {
+        let embedUrl = url;
+        const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        if (match) {
+            embedUrl = 'https://www.youtube.com/embed/' + match[1];
+        }
+        const videoHtml = `<div class="my-6 aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-200"><iframe src="${embedUrl}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p></p>`;
+        document.getElementById('modulo_editor_visual').focus();
+        document.execCommand('insertHTML', false, videoHtml);
+    }
+}
+
+function inserirTabelaModulo() {
+    const tabelaHtml = `
+        <table class="w-full my-4 border border-slate-300 rounded-xl overflow-hidden text-xs">
+            <thead class="bg-slate-100 font-bold text-slate-800">
+                <tr><th class="p-2 border border-slate-200">Tópico</th><th class="p-2 border border-slate-200">Descrição / Prática</th></tr>
+            </thead>
+            <tbody>
+                <tr><td class="p-2 border border-slate-200">Item 01</td><td class="p-2 border border-slate-200">Conteúdo prático aqui...</td></tr>
+                <tr><td class="p-2 border border-slate-200">Item 02</td><td class="p-2 border border-slate-200">Orientações adicionais...</td></tr>
+            </tbody>
+        </table><p></p>
+    `;
+    document.getElementById('modulo_editor_visual').focus();
+    document.execCommand('insertHTML', false, tabelaHtml);
+}
+
+function inserirImagemAula() {
+    const url = prompt('Digite a URL da imagem ou link local (/public/...):', 'https://');
+    if (url) {
+        const alt = prompt('Descrição/Legenda da imagem:', 'Imagem da aula');
+        const imgHtml = `<figure class="my-4"><img src="${url}" alt="${alt}" class="rounded-2xl max-w-full shadow-md mx-auto" /><figcaption class="text-center text-xs text-slate-400 mt-1 italic">${alt || ''}</figcaption></figure><p></p>`;
+        document.getElementById('aula_editor_visual').focus();
+        document.execCommand('insertHTML', false, imgHtml);
+    }
+}
+
+function inserirVideoEmbedAula() {
+    const url = prompt('Digite o link do vídeo do YouTube para incorporar no meio da aula:', 'https://www.youtube.com/watch?v=');
+    if (url) {
+        let embedUrl = url;
+        const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        if (match) {
+            embedUrl = 'https://www.youtube.com/embed/' + match[1];
+        }
+        const videoHtml = `<div class="my-6 aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-200"><iframe src="${embedUrl}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p></p>`;
+        document.getElementById('aula_editor_visual').focus();
+        document.execCommand('insertHTML', false, videoHtml);
+    }
+}
+
+function inserirTabelaAula() {
+    const tabelaHtml = `
+        <table class="w-full my-4 border border-slate-300 rounded-xl overflow-hidden text-xs">
+            <thead class="bg-slate-100 font-bold text-slate-800">
+                <tr><th class="p-2 border border-slate-200">Etapa</th><th class="p-2 border border-slate-200">Instruções da Aula</th></tr>
+            </thead>
+            <tbody>
+                <tr><td class="p-2 border border-slate-200">Passo 1</td><td class="p-2 border border-slate-200">Ajuste de luz e foco...</td></tr>
+                <tr><td class="p-2 border border-slate-200">Passo 2</td><td class="p-2 border border-slate-200">Composição do enquadramento...</td></tr>
+            </tbody>
+        </table><p></p>
+    `;
+    document.getElementById('aula_editor_visual').focus();
+    document.execCommand('insertHTML', false, tabelaHtml);
+}
+
 let isAulaHtmlMode = false;
 function toggleAulaEditorMode(mode) {
     const visualArea = document.getElementById('aula_editor_visual');
@@ -3127,6 +3338,117 @@ function editarAula(a, cursoId) {
     abrirModal('modal-aula-crud');
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
+
+// -------------------------------------------------------------
+// REORDENAÇÃO / DRAG-AND-DROP DE MÓDULOS COM SALVAMENTO AJAX
+// -------------------------------------------------------------
+function moverModuloCard(btn, direcao) {
+    const card = btn.closest('.modulo-item-card');
+    const container = document.getElementById('modulos-sortable-list');
+    if (!card || !container) return;
+
+    if (direcao === 'up' && card.previousElementSibling && card.previousElementSibling.classList.contains('modulo-item-card')) {
+        container.insertBefore(card, card.previousElementSibling);
+    } else if (direcao === 'down' && card.nextElementSibling && card.nextElementSibling.classList.contains('modulo-item-card')) {
+        container.insertBefore(card.nextElementSibling, card);
+    }
+
+    atualizarNumeracaoModuloBadges();
+    salvarOrdemModulosServidor();
+}
+
+function atualizarNumeracaoModuloBadges() {
+    const cards = document.querySelectorAll('#modulos-sortable-list .modulo-item-card');
+    cards.forEach((c, index) => {
+        const badge = c.querySelector('.modulo-badge-num');
+        if (badge) {
+            badge.innerText = String(index + 1).padStart(2, '0');
+        }
+    });
+}
+
+function salvarOrdemModulosServidor() {
+    const container = document.getElementById('modulos-sortable-list');
+    if (!container) return;
+    const cursoId = container.getAttribute('data-curso-id');
+    const cards = document.querySelectorAll('#modulos-sortable-list .modulo-item-card');
+    const ordemIds = Array.from(cards).map(c => c.getAttribute('data-modulo-id'));
+
+    const formData = new FormData();
+    formData.append('csrf_token', '<?php echo get_csrf_token(); ?>');
+    formData.append('action', 'reordenar_modulos');
+    formData.append('curso_id', cursoId);
+    formData.append('modulos_ordem', JSON.stringify(ordemIds));
+    formData.append('is_ajax', '1');
+
+    fetch('dashboard.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(res => {
+        const toast = document.getElementById('toast-ordem-status');
+        if (toast) {
+            toast.classList.remove('hidden');
+            setTimeout(() => { toast.classList.add('hidden'); }, 2500);
+        }
+    })
+    .catch(err => {
+        console.log('Ordem salva localmente');
+    });
+}
+
+// Inicializa Drag & Drop nos Módulos
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('modulos-sortable-list');
+    if (!container) return;
+
+    let draggedItem = null;
+
+    container.querySelectorAll('.modulo-item-card').forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+            draggedItem = item;
+            item.classList.add('opacity-50', 'border-blue-400', 'scale-[0.99]');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        item.addEventListener('dragend', () => {
+            if (draggedItem) {
+                draggedItem.classList.remove('opacity-50', 'border-blue-400', 'scale-[0.99]');
+                draggedItem = null;
+            }
+            atualizarNumeracaoModuloBadges();
+            salvarOrdemModulosServidor();
+        });
+
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const afterElement = getDragAfterElement(container, e.clientY);
+            if (draggedItem) {
+                if (afterElement == null) {
+                    container.appendChild(draggedItem);
+                } else {
+                    container.insertBefore(draggedItem, afterElement);
+                }
+            }
+        });
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.modulo-item-card:not(.opacity-50)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+});
+
 
 
 const bancoBairrosPorCidade = {
