@@ -402,38 +402,126 @@ function upload_aula_anexo($fileArray, $tituloAula, $id = 0) {
 }
 
 /**
- * Processa upload de áudio direto de aula/módulo salvando em /public/aulas/audios/{titulo_sanitizado}_{id}.mp3
+ * Processa upload manual da Biblioteca de Mídia salvando exclusivamente em /public/anexos/{nome_sanitizado}.{ext}
  */
-function upload_aula_audio($fileArray, $tituloAula, $id = 0) {
+function upload_public_anexo($fileArray) {
     if (!isset($fileArray) || $fileArray['error'] !== UPLOAD_ERR_OK) {
-        return ['success' => false, 'message' => 'Nenhum áudio enviado ou erro no upload.'];
+        return ['success' => false, 'message' => 'Nenhum arquivo enviado ou erro no upload.'];
     }
 
-    $targetDir = ROOT_PATH . '/public/aulas/audios';
+    $targetDir = ROOT_PATH . '/public/anexos';
     if (!is_dir($targetDir)) {
         mkdir($targetDir, 0755, true);
     }
 
+    $origName = pathinfo($fileArray['name'], PATHINFO_FILENAME);
     $ext = pathinfo($fileArray['name'], PATHINFO_EXTENSION);
-    $ext = strtolower($ext ?: 'mp3');
-    if (!in_array($ext, ['mp3', 'wav', 'ogg', 'm4a', 'aac'])) {
-        $ext = 'mp3';
+    $ext = strtolower($ext ?: 'jpg');
+
+    $nomeSanitizado = sanitize_file_name($origName);
+    if (empty($nomeSanitizado)) {
+        $nomeSanitizado = 'midia_' . time();
+    }
+    
+    // Evita sobrescrever arquivos existentes com o mesmo nome
+    $filename = $nomeSanitizado . '.' . $ext;
+    if (file_exists($targetDir . '/' . $filename)) {
+        $filename = $nomeSanitizado . '_' . time() . '.' . $ext;
     }
 
-    $tituloSanitizado = sanitize_file_name($tituloAula);
-    $filename = $tituloSanitizado . '_' . ($id ?: time()) . '.' . $ext;
     $targetPath = $targetDir . '/' . $filename;
-    $relativePath = 'public/aulas/audios/' . $filename;
+    $relativePath = 'public/anexos/' . $filename;
 
     if (move_uploaded_file($fileArray['tmp_name'], $targetPath)) {
+        $type = 'document';
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) $type = 'image';
+        elseif (in_array($ext, ['mp4', 'webm', 'mov', 'avi'])) $type = 'video';
+        elseif (in_array($ext, ['mp3', 'wav', 'ogg', 'm4a', 'aac'])) $type = 'audio';
+        elseif (in_array($ext, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'txt'])) $type = 'document';
+
         return [
             'success' => true,
-            'path' => $relativePath,
+            'url' => $relativePath,
+            'name' => $fileArray['name'],
             'filename' => $filename,
-            'message' => 'Arquivo de áudio salvo em /public/aulas/audios/ com sucesso!'
+            'size' => filesize($targetPath),
+            'type' => $type,
+            'ext' => $ext,
+            'folder' => 'anexos',
+            'date' => date('d/m/Y H:i', filemtime($targetPath)),
+            'message' => 'Arquivo salvo em /public/anexos/ com sucesso!'
         ];
     }
 
-    return ['success' => false, 'message' => 'Falha ao salvar áudio em /public/aulas/audios/'];
+    return ['success' => false, 'message' => 'Falha ao salvar arquivo em /public/anexos/'];
 }
+
+/**
+ * Escaneia e retorna todos os arquivos de mídia existentes na pasta /public e subpastas
+ */
+function scan_public_media_library() {
+    $basePublic = ROOT_PATH . '/public';
+    $files = [];
+
+    if (!is_dir($basePublic)) {
+        return [];
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($basePublic, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    $extImgs = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'];
+    $extVideos = ['mp4', 'webm', 'mov', 'avi'];
+    $extAudios = ['mp3', 'wav', 'ogg', 'm4a', 'aac'];
+    $extDocs = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'txt'];
+
+    foreach ($iterator as $item) {
+        if ($item->isFile()) {
+            $filename = $item->getFilename();
+            // Ignora arquivos do git ou ocultos
+            if (strpos($filename, '.') === 0 || $filename === '.gitkeep') {
+                continue;
+            }
+
+            $ext = strtolower($item->getExtension());
+            $type = 'other';
+            if (in_array($ext, $extImgs)) $type = 'image';
+            elseif (in_array($ext, $extVideos)) $type = 'video';
+            elseif (in_array($ext, $extAudios)) $type = 'audio';
+            elseif (in_array($ext, $extDocs)) $type = 'document';
+
+            // Caminho relativo a partir da raiz do site
+            $fullPath = str_replace('\\', '/', $item->getPathname());
+            $rootClean = str_replace('\\', '/', ROOT_PATH);
+            $relPath = ltrim(str_replace($rootClean, '', $fullPath), '/');
+
+            // Determina a pasta pai
+            $parentFolder = basename(dirname($item->getPathname()));
+            if ($parentFolder === 'public') {
+                $parentFolder = 'raiz';
+            }
+
+            $files[] = [
+                'name' => $filename,
+                'url' => $relPath,
+                'size' => $item->getSize(),
+                'type' => $type,
+                'ext' => $ext,
+                'folder' => $parentFolder,
+                'mtime' => $item->getMTime(),
+                'date' => date('d/m/Y H:i', $item->getMTime())
+            ];
+        }
+    }
+
+    // Ordena arquivos mais recentes primeiro
+    usort($files, function($a, $b) {
+        return $b['mtime'] <=> $a['mtime'];
+    });
+
+    return $files;
+}
+
 

@@ -20,6 +20,25 @@ $abaAtiva = $_GET['aba'] ?? 'visao_geral';
 $mensagemSucesso = '';
 $mensagemErro = '';
 
+// -------------------------------------------------------------
+// ENDPOINTS AJAX: BIBLIOTECA DE MÍDIAS (MEDIA LIBRARY /public)
+// -------------------------------------------------------------
+if (isset($_GET['api_action']) && $_GET['api_action'] === 'get_media_library') {
+    header('Content-Type: application/json');
+    $files = scan_public_media_library();
+    echo json_encode(['success' => true, 'files' => $files]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_media_library') {
+    if (isset($_FILES['media_file'])) {
+        $result = upload_public_anexo($_FILES['media_file']);
+        header('Content-Type: application/json');
+        echo json_encode($result);
+        exit;
+    }
+}
+
 // ====================================================================
 // PROCESSAMENTO DE AÇÕES POST (CRUDs)
 // ====================================================================
@@ -2526,7 +2545,7 @@ require_once ROOT_PATH . '/components/common/logo.php';
                     <input type="text" id="modulo_titulo" name="titulo" required placeholder="Ex: Módulo 01 - Introdução ao Enquadramento e Luz" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Ordem no Curso</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Ordem no Curso</label>
                     <input type="number" id="modulo_ordem" name="ordem" value="0" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
                 </div>
             </div>
@@ -2541,6 +2560,20 @@ require_once ROOT_PATH . '/components/common/logo.php';
             <!-- EDITOR DE CONTEÚDO RICO (WYSIWYG - Estilo WordPress / TinyMCE Completo) -->
             <!-- ========================================================= -->
             <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                <!-- Botão Destaque WordPress: Adicionar Mídia -->
+                <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                    <button type="button" onclick="abrirMediaLibrary('modulo', 'all')" class="px-4 py-1.5 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                        <span>📁 Adicionar Mídia (Media Library /public)</span>
+                    </button>
+                    
+                    <!-- Alternar Visual / HTML -->
+                    <div class="flex items-center gap-1">
+                        <button type="button" id="btn-mod-mode-visual" onclick="toggleModuloEditorMode('visual')" class="px-3 py-1 bg-[#0D5BA8] text-white font-bold text-xs rounded-lg">Visual</button>
+                        <button type="button" id="btn-mod-mode-html" onclick="toggleModuloEditorMode('html')" class="px-3 py-1 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs rounded-lg">Código HTML</button>
+                    </div>
+                </div>
+
                 <!-- Barra de Ferramentas WordPress Completa -->
                 <div class="bg-slate-100 p-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-1.5 select-none">
                     <div class="flex flex-wrap items-center gap-1">
@@ -2580,10 +2613,12 @@ require_once ROOT_PATH . '/components/common/logo.php';
 
                         <div class="h-4 w-px bg-slate-300 mx-1"></div>
 
-                        <!-- Inserções no Meio do Texto: Link, Imagem, Vídeo, Tabela, Divisória -->
+                        <!-- Inserções no Meio do Texto conectadas à Media Library e links -->
                         <button type="button" onclick="inserirLinkModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-blue-600 font-bold flex items-center gap-1" title="Inserir Link">🔗 Link</button>
-                        <button type="button" onclick="inserirImagemModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-emerald-700 font-bold flex items-center gap-1" title="Inserir Imagem no Texto">🖼️ Imagem</button>
-                        <button type="button" onclick="inserirVideoEmbedModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-rose-600 font-bold flex items-center gap-1" title="Inserir Vídeo Incorporado no Texto">🎬 Vídeo</button>
+                        <button type="button" onclick="abrirMediaLibrary('modulo', 'image')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-emerald-700 font-bold flex items-center gap-1" title="Inserir Imagem do Servidor / Upload">🖼️ Imagem</button>
+                        <button type="button" onclick="abrirMediaLibrary('modulo', 'video')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-rose-600 font-bold flex items-center gap-1" title="Inserir Vídeo do Servidor / YouTube">🎬 Vídeo</button>
+                        <button type="button" onclick="abrirMediaLibrary('modulo', 'audio')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-teal-600 font-bold flex items-center gap-1" title="Inserir Áudio do Servidor">🎧 Áudio</button>
+                        <button type="button" onclick="abrirMediaLibrary('modulo', 'document')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-amber-700 font-bold flex items-center gap-1" title="Inserir PDF / Documento">📄 PDF</button>
                         <button type="button" onclick="inserirTabelaModulo()" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-purple-600 font-bold flex items-center gap-1" title="Inserir Tabela">📊 Tabela</button>
                         <button type="button" onclick="execModuloCmd('insertHorizontalRule')" class="px-2 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs font-bold" title="Linha Divisória">―</button>
 
@@ -2600,12 +2635,6 @@ require_once ROOT_PATH . '/components/common/logo.php';
                         </label>
 
                         <button type="button" onclick="execModuloCmd('removeFormat')" class="px-2.5 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-slate-500" title="Limpar Formatação">Tx</button>
-                    </div>
-
-                    <!-- Alternar Visual / HTML -->
-                    <div class="flex items-center gap-1">
-                        <button type="button" id="btn-mod-mode-visual" onclick="toggleModuloEditorMode('visual')" class="px-3 py-1 bg-[#0D5BA8] text-white font-bold text-xs rounded">Visual</button>
-                        <button type="button" id="btn-mod-mode-html" onclick="toggleModuloEditorMode('html')" class="px-3 py-1 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs rounded">Código HTML</button>
                     </div>
                 </div>
 
@@ -2741,6 +2770,20 @@ require_once ROOT_PATH . '/components/common/logo.php';
             <!-- EDITOR DE CONTEÚDO RICO DA AULA (WYSIWYG - Estilo WordPress Completo) -->
             <!-- ========================================================= -->
             <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                <!-- Botão Destaque WordPress: Adicionar Mídia -->
+                <div class="p-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                    <button type="button" onclick="abrirMediaLibrary('aula', 'all')" class="px-4 py-1.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
+                        <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                        <span>📁 Adicionar Mídia (Media Library /public)</span>
+                    </button>
+                    
+                    <!-- Alternar Visual / HTML -->
+                    <div class="flex items-center gap-1">
+                        <button type="button" id="btn-aula-mode-visual" onclick="toggleAulaEditorMode('visual')" class="px-2.5 py-1 bg-[#0D5BA8] text-white font-bold text-xs rounded">Visual</button>
+                        <button type="button" id="btn-aula-mode-html" onclick="toggleAulaEditorMode('html')" class="px-2.5 py-1 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs rounded">Código HTML</button>
+                    </div>
+                </div>
+
                 <!-- Barra de Ferramentas WordPress -->
                 <div class="bg-slate-100 p-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-1.5 select-none">
                     <div class="flex flex-wrap items-center gap-1">
@@ -2776,19 +2819,15 @@ require_once ROOT_PATH . '/components/common/logo.php';
 
                         <div class="h-4 w-px bg-slate-300 mx-1"></div>
 
-                        <!-- Inserção de Link, Imagem e Vídeo -->
+                        <!-- Inserção de Link, Imagem, Vídeo, Áudio e Tabela da Media Library -->
                         <button type="button" onclick="inserirLinkAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-blue-600 font-bold" title="Inserir Link">🔗 Link</button>
-                        <button type="button" onclick="inserirImagemAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-emerald-700 font-bold" title="Inserir Imagem">🖼️ Imagem</button>
-                        <button type="button" onclick="inserirVideoEmbedAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-rose-600 font-bold" title="Inserir Vídeo">🎬 Vídeo</button>
+                        <button type="button" onclick="abrirMediaLibrary('aula', 'image')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-emerald-700 font-bold" title="Inserir Imagem">🖼️ Imagem</button>
+                        <button type="button" onclick="abrirMediaLibrary('aula', 'video')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-rose-600 font-bold" title="Inserir Vídeo">🎬 Vídeo</button>
+                        <button type="button" onclick="abrirMediaLibrary('aula', 'audio')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-teal-600 font-bold" title="Inserir Áudio">🎧 Áudio</button>
+                        <button type="button" onclick="abrirMediaLibrary('aula', 'document')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-amber-700 font-bold" title="Inserir PDF">📄 PDF</button>
                         <button type="button" onclick="inserirTabelaAula()" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-purple-600 font-bold" title="Inserir Tabela">📊 Tabela</button>
 
                         <button type="button" onclick="execAulaCmd('removeFormat')" class="px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-300 rounded text-xs text-slate-500" title="Limpar Formatação">Tx</button>
-                    </div>
-
-                    <!-- Alternar Visual / HTML -->
-                    <div class="flex items-center gap-1">
-                        <button type="button" id="btn-aula-mode-visual" onclick="toggleAulaEditorMode('visual')" class="px-2.5 py-1 bg-[#0D5BA8] text-white font-bold text-xs rounded">Visual</button>
-                        <button type="button" id="btn-aula-mode-html" onclick="toggleAulaEditorMode('html')" class="px-2.5 py-1 bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs rounded">Código HTML</button>
                     </div>
                 </div>
 
@@ -2798,8 +2837,8 @@ require_once ROOT_PATH . '/components/common/logo.php';
                 </div>
 
                 <!-- Área Código HTML (Oculta por padrão) -->
+                <textarea id="aula_editor_html" rows="8" class="hidden w-full p-4 font-mono text-xs text-slate-800 bg-slate-900 text-slate-100 focus:outline-none leading-relaxed"></textarea>
             </div>
-
 
             <!-- ========================================================= -->
             <!-- CONFIGURAÇÃO DE VÍDEO DA AULA (Link ou Upload MP4) -->
@@ -2883,6 +2922,174 @@ require_once ROOT_PATH . '/components/common/logo.php';
                 <button type="submit" class="px-8 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white rounded-xl text-xs font-bold shadow-md">Salvar & Publicar Aula</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ==================================================================== -->
+<!-- 5. MODAL BIBLIOTECA DE MÍDIAS (MEDIA LIBRARY /public COMPLETA) -->
+<!-- ==================================================================== -->
+<div id="modal-media-library" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl max-w-6xl w-full h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden">
+        
+        <!-- Header da Biblioteca -->
+        <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 bg-slate-50/80">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0D5BA8] flex items-center justify-center shadow-xs">
+                    <i data-lucide="folder-open" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-heading font-extrabold text-lg text-slate-900">Biblioteca de Mídias</h3>
+                    <p class="text-[11px] text-slate-500">Navegue em <code class="font-mono bg-white px-1.5 py-0.5 rounded text-blue-600 font-bold">/public</code> e faça upload direto para <code class="font-mono bg-white px-1.5 py-0.5 rounded text-emerald-600 font-bold">/public/anexos/</code></p>
+                </div>
+            </div>
+
+            <!-- Abas da Biblioteca -->
+            <div class="flex items-center gap-1.5 bg-slate-200/80 p-1 rounded-2xl">
+                <button type="button" id="tab-btn-ml-browse" onclick="switchMediaLibraryTab('browse')" class="px-4 py-1.5 rounded-xl font-bold text-xs bg-white text-[#0D5BA8] shadow-xs transition-all flex items-center gap-1.5">
+                    <i data-lucide="grid" class="w-3.5 h-3.5"></i>
+                    <span>Explorar Arquivos</span>
+                </button>
+                <button type="button" id="tab-btn-ml-upload" onclick="switchMediaLibraryTab('upload')" class="px-4 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                    <span>Enviar Arquivo</span>
+                </button>
+                <button type="button" id="tab-btn-ml-url" onclick="switchMediaLibraryTab('url')" class="px-4 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition-all flex items-center gap-1.5">
+                    <i data-lucide="link-2" class="w-3.5 h-3.5"></i>
+                    <span>Link / URL</span>
+                </button>
+            </div>
+
+            <button type="button" onclick="fecharModal('modal-media-library')" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors">✕</button>
+        </div>
+
+        <!-- Conteúdo das Abas -->
+        <div class="flex-1 overflow-hidden flex flex-col">
+            
+            <!-- ABA 1: EXPLORAR ARQUIVOS DA PASTA /public -->
+            <div id="ml-panel-browse" class="flex-1 flex flex-col md:flex-row overflow-hidden">
+                <!-- Área de Grade de Mídias (Esquerda) -->
+                <div class="flex-1 flex flex-col overflow-hidden border-r border-slate-100">
+                    <!-- Barra de Filtros & Busca -->
+                    <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Filtro Tipo -->
+                            <select id="ml-filter-type" onchange="renderMediaLibraryGrid()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+                                <option value="all">Todos os Tipos de Mídia</option>
+                                <option value="image">🖼️ Imagens (JPG, PNG, WebP)</option>
+                                <option value="video">🎬 Vídeos (MP4, WebM)</option>
+                                <option value="audio">🎧 Áudios (MP3, WAV)</option>
+                                <option value="document">📄 Documentos (PDF, DOCX)</option>
+                            </select>
+
+                            <!-- Filtro Pasta -->
+                            <select id="ml-filter-folder" onchange="renderMediaLibraryGrid()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+                                <option value="all">Todas as Pastas</option>
+                                <option value="anexos">/public/anexos/ (Uploads)</option>
+                                <option value="cursos">/public/cursos/</option>
+                                <option value="aulas">/public/aulas/</option>
+                                <option value="vitrine">/public/vitrine/</option>
+                                <option value="parceiros">/public/parceiros/</option>
+                            </select>
+                        </div>
+
+                        <!-- Busca -->
+                        <div class="relative w-full sm:w-56">
+                            <input type="text" id="ml-search-input" oninput="renderMediaLibraryGrid()" placeholder="Buscar arquivo..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+                        </div>
+                    </div>
+
+                    <!-- Grade de Mídias -->
+                    <div id="ml-grid-container" class="flex-1 p-4 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+                        <!-- Itens renderizados dinamicamente via JS -->
+                    </div>
+                </div>
+
+                <!-- Painel de Detalhes da Mídia Selecionada (Direita) -->
+                <div id="ml-sidebar-details" class="w-full md:w-80 bg-slate-50/60 p-5 overflow-y-auto flex flex-col justify-between border-t md:border-t-0 border-slate-100">
+                    <div id="ml-selected-info" class="space-y-4">
+                        <div class="text-center py-10 text-slate-400 space-y-2">
+                            <i data-lucide="image" class="w-10 h-10 mx-auto stroke-1"></i>
+                            <p class="text-xs">Selecione um arquivo ao lado para ver os detalhes e inserir.</p>
+                        </div>
+                    </div>
+
+                    <div id="ml-insert-footer" class="pt-4 border-t border-slate-200 hidden space-y-3">
+                        <button type="button" onclick="confirmarInsercaoMidia()" class="w-full py-3 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            <span>Inserir no Conteúdo</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: UPLOAD DE NOVO ARQUIVO (SALVO EM /public/anexos/) -->
+            <div id="ml-panel-upload" class="hidden flex-1 p-8 overflow-y-auto flex flex-col items-center justify-center">
+                <div class="max-w-md w-full p-8 border-2 border-dashed border-slate-300 hover:border-[#0D5BA8] rounded-3xl bg-slate-50/50 text-center space-y-4 transition-all" id="ml-dropzone">
+                    <div class="w-16 h-16 rounded-2xl bg-blue-50 text-[#0D5BA8] flex items-center justify-center mx-auto shadow-xs">
+                        <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="font-heading font-bold text-base text-slate-900">Arraste seus arquivos para cá</h4>
+                        <p class="text-xs text-slate-500">Imagens (PNG, JPG, WebP), Vídeos (MP4), Áudios (MP3) ou Documentos (PDF, DOCX)</p>
+                        <p class="text-[11px] text-emerald-600 font-bold mt-1">Salvo automaticamente em <code class="font-mono bg-white px-1 py-0.5 rounded text-emerald-700">/public/anexos/</code></p>
+                    </div>
+
+                    <div>
+                        <input type="file" id="ml-file-input" onchange="handleMediaLibraryUpload(this.files[0])" class="hidden" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip">
+                        <button type="button" onclick="document.getElementById('ml-file-input').click()" class="px-6 py-2.5 bg-[#FF8A00] hover:bg-[#E67A00] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
+                            Selecionar Arquivo no Computador
+                        </button>
+                    </div>
+
+                    <div id="ml-upload-progress" class="hidden space-y-2 pt-2">
+                        <div class="flex justify-between text-xs font-bold text-slate-600">
+                            <span>Enviando para o servidor...</span>
+                            <span id="ml-upload-percent">0%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div id="ml-upload-bar" class="h-full bg-[#0D5BA8] transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 3: INSERIR POR LINK / URL EXTERNA -->
+            <div id="ml-panel-url" class="hidden flex-1 p-8 overflow-y-auto max-w-xl mx-auto w-full space-y-4">
+                <div class="space-y-1">
+                    <h4 class="font-heading font-bold text-base text-slate-900">Inserir Mídia por URL / Link Externo</h4>
+                    <p class="text-xs text-slate-500">Cole o link de uma imagem externa, vídeo do YouTube/Vimeo ou arquivo de áudio.</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Mídia</label>
+                        <select id="ml-url-type" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                            <option value="image">🖼️ Imagem (URL externa)</option>
+                            <option value="youtube">🎬 Vídeo do YouTube / Vimeo (Player Incorporado)</option>
+                            <option value="audio">🎧 Áudio Externo (Player MP3)</option>
+                            <option value="link">🔗 Link / Documento para Download</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Endereço da URL *</label>
+                        <input type="text" id="ml-url-input" placeholder="https://..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Legenda / Texto Alternativo (Opcional)</label>
+                        <input type="text" id="ml-url-alt" placeholder="Descrição da imagem ou vídeo..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    </div>
+
+                    <button type="button" onclick="inserirMidiaPorUrlDireta()" class="w-full py-3 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
+                        Inserir Mídia no Editor
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 </div>
 
@@ -3152,28 +3359,336 @@ function inserirLinkAula() {
     }
 }
 
-function inserirImagemModulo() {
-    const url = prompt('Digite a URL da imagem ou link local (/public/...):', 'https://');
-    if (url) {
-        const alt = prompt('Descrição/Legenda da imagem:', 'Imagem explicativa');
-        const imgHtml = `<figure class="my-4"><img src="${url}" alt="${alt}" class="rounded-2xl max-w-full shadow-md mx-auto" /><figcaption class="text-center text-xs text-slate-400 mt-1 italic">${alt || ''}</figcaption></figure><p></p>`;
-        document.getElementById('modulo_editor_visual').focus();
-        document.execCommand('insertHTML', false, imgHtml);
+// =============================================================
+// BIBLIOTECA DE MÍDIAS (MEDIA LIBRARY /public CONTROLLER)
+// =============================================================
+let mediaLibraryState = {
+    target: 'modulo', // 'modulo' or 'aula'
+    filterType: 'all', // 'all', 'image', 'video', 'audio', 'document'
+    filterFolder: 'all',
+    files: [],
+    selectedFile: null
+};
+
+function abrirMediaLibrary(target = 'modulo', filterType = 'all') {
+    mediaLibraryState.target = target;
+    mediaLibraryState.filterType = filterType;
+    mediaLibraryState.selectedFile = null;
+
+    const selectType = document.getElementById('ml-filter-type');
+    if (selectType) selectType.value = filterType;
+
+    switchMediaLibraryTab('browse');
+    abrirModal('modal-media-library');
+
+    carregarArquivosMediaLibrary();
+}
+
+function switchMediaLibraryTab(tab) {
+    const pBrowse = document.getElementById('ml-panel-browse');
+    const pUpload = document.getElementById('ml-panel-upload');
+    const pUrl = document.getElementById('ml-panel-url');
+    const tBrowse = document.getElementById('tab-btn-ml-browse');
+    const tUpload = document.getElementById('tab-btn-ml-upload');
+    const tUrl = document.getElementById('tab-btn-ml-url');
+
+    [pBrowse, pUpload, pUrl].forEach(p => p && p.classList.add('hidden'));
+    [tBrowse, tUpload, tUrl].forEach(t => {
+        if (t) {
+            t.classList.remove('bg-white', 'text-[#0D5BA8]', 'shadow-xs');
+            t.classList.add('text-slate-600');
+        }
+    });
+
+    if (tab === 'upload') {
+        if (pUpload) pUpload.classList.remove('hidden');
+        if (tUpload) {
+            tUpload.classList.add('bg-white', 'text-[#0D5BA8]', 'shadow-xs');
+            tUpload.classList.remove('text-slate-600');
+        }
+    } else if (tab === 'url') {
+        if (pUrl) pUrl.classList.remove('hidden');
+        if (tUrl) {
+            tUrl.classList.add('bg-white', 'text-[#0D5BA8]', 'shadow-xs');
+            tUrl.classList.remove('text-slate-600');
+        }
+    } else {
+        if (pBrowse) pBrowse.classList.remove('hidden');
+        if (tBrowse) {
+            tBrowse.classList.add('bg-white', 'text-[#0D5BA8]', 'shadow-xs');
+            tBrowse.classList.remove('text-slate-600');
+        }
     }
 }
 
-function inserirVideoEmbedModulo() {
-    const url = prompt('Digite o link do vídeo do YouTube ou Vimeo para incorporar no texto:', 'https://www.youtube.com/watch?v=');
-    if (url) {
+function carregarArquivosMediaLibrary() {
+    const grid = document.getElementById('ml-grid-container');
+    if (grid) {
+        grid.innerHTML = '<div class="col-span-full py-16 text-center text-slate-400"><p class="text-xs font-bold animate-pulse">Carregando arquivos da pasta /public...</p></div>';
+    }
+
+    fetch('dashboard.php?api_action=get_media_library')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.files) {
+                mediaLibraryState.files = data.files;
+                renderMediaLibraryGrid();
+            }
+        })
+        .catch(err => {
+            if (grid) grid.innerHTML = '<div class="col-span-full py-10 text-center text-rose-500 text-xs">Erro ao carregar arquivos da biblioteca.</div>';
+        });
+}
+
+function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function renderMediaLibraryGrid() {
+    const grid = document.getElementById('ml-grid-container');
+    if (!grid) return;
+
+    const typeFilter = document.getElementById('ml-filter-type')?.value || 'all';
+    const folderFilter = document.getElementById('ml-filter-folder')?.value || 'all';
+    const search = (document.getElementById('ml-search-input')?.value || '').toLowerCase().trim();
+
+    const filtered = mediaLibraryState.files.filter(f => {
+        const matchType = (typeFilter === 'all') || (f.type === typeFilter);
+        const matchFolder = (folderFilter === 'all') || (f.folder === folderFilter);
+        const matchSearch = !search || f.name.toLowerCase().includes(search) || f.url.toLowerCase().includes(search);
+        return matchType && matchFolder && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full py-16 text-center text-slate-400 space-y-2">
+                <p class="text-xs font-bold text-slate-600">Nenhum arquivo encontrado com estes filtros.</p>
+                <p class="text-[11px]">Faça upload de novos arquivos para a pasta /public/anexos na aba Enviar Arquivo.</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = '';
+    filtered.forEach(file => {
+        const item = document.createElement('div');
+        const isSelected = mediaLibraryState.selectedFile && mediaLibraryState.selectedFile.url === file.url;
+        item.className = `group relative rounded-2xl border ${isSelected ? 'border-2 border-[#0D5BA8] ring-2 ring-blue-100 bg-blue-50/20' : 'border-slate-200 hover:border-[#0D5BA8] bg-white'} p-2 cursor-pointer transition-all flex flex-col justify-between overflow-hidden shadow-2xs`;
+        
+        let previewHtml = '';
+        if (file.type === 'image') {
+            previewHtml = `<div class="aspect-square rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center"><img src="${file.url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" /></div>`;
+        } else if (file.type === 'video') {
+            previewHtml = `<div class="aspect-square rounded-xl bg-slate-900 text-white flex flex-col items-center justify-center gap-1"><i data-lucide="video" class="w-7 h-7 text-rose-400"></i><span class="text-[9px] font-mono uppercase bg-rose-500/20 px-1.5 py-0.2 rounded text-rose-300">VÍDEO</span></div>`;
+        } else if (file.type === 'audio') {
+            previewHtml = `<div class="aspect-square rounded-xl bg-emerald-50 text-emerald-600 flex flex-col items-center justify-center gap-1"><i data-lucide="headphones" class="w-7 h-7"></i><span class="text-[9px] font-mono uppercase bg-emerald-100 px-1.5 py-0.2 rounded text-emerald-800">ÁUDIO</span></div>`;
+        } else {
+            previewHtml = `<div class="aspect-square rounded-xl bg-amber-50 text-amber-700 flex flex-col items-center justify-center gap-1"><i data-lucide="file-text" class="w-7 h-7"></i><span class="text-[9px] font-mono uppercase bg-amber-100 px-1.5 py-0.2 rounded text-amber-900">${file.ext || 'DOC'}</span></div>`;
+        }
+
+        item.innerHTML = `
+            ${previewHtml}
+            <div class="mt-2 min-w-0">
+                <p class="text-[11px] font-bold text-slate-800 truncate" title="${file.name}">${file.name}</p>
+                <div class="flex items-center justify-between text-[9px] text-slate-400 mt-0.5">
+                    <span>${formatBytes(file.size)}</span>
+                    <span class="font-mono bg-slate-100 px-1 rounded truncate max-w-[70px]">${file.folder}</span>
+                </div>
+            </div>
+        `;
+
+        item.onclick = () => selectMediaFile(file);
+        grid.appendChild(item);
+    });
+
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function selectMediaFile(file) {
+    mediaLibraryState.selectedFile = file;
+    renderMediaLibraryGrid();
+
+    const infoBox = document.getElementById('ml-selected-info');
+    const footer = document.getElementById('ml-insert-footer');
+    if (!infoBox || !footer) return;
+
+    let preview = '';
+    if (file.type === 'image') {
+        preview = `<img src="${file.url}" class="w-full max-h-48 object-cover rounded-2xl border border-slate-200 shadow-xs mb-3" />`;
+    } else if (file.type === 'video') {
+        preview = `<video src="${file.url}" controls class="w-full max-h-48 rounded-2xl border border-slate-200 shadow-xs mb-3"></video>`;
+    } else if (file.type === 'audio') {
+        preview = `<div class="p-3 bg-white rounded-2xl border border-slate-200 mb-3"><audio src="${file.url}" controls class="w-full"></audio></div>`;
+    } else {
+        preview = `<div class="p-4 bg-white rounded-2xl border border-slate-200 flex items-center gap-3 mb-3"><span class="text-3xl">📄</span><div><p class="text-xs font-bold text-slate-800">${file.name}</p><p class="text-[10px] text-slate-400">${formatBytes(file.size)}</p></div></div>`;
+    }
+
+    infoBox.innerHTML = `
+        <h4 class="font-heading font-bold text-xs uppercase tracking-wider text-slate-400">Detalhes da Mídia</h4>
+        ${preview}
+        <div class="space-y-2 text-xs">
+            <div class="space-y-0.5">
+                <label class="font-bold text-slate-700 text-[10px] uppercase">Nome do Arquivo:</label>
+                <p class="font-mono text-[11px] text-slate-800 truncate" title="${file.name}">${file.name}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                <div><b class="text-slate-700">Tamanho:</b> ${formatBytes(file.size)}</div>
+                <div><b class="text-slate-700">Pasta:</b> /public/${file.folder}/</div>
+            </div>
+            <div class="space-y-1 pt-1">
+                <label class="block font-bold text-slate-700 text-[11px]">Legenda / Texto Alternativo</label>
+                <input type="text" id="ml-selected-alt" value="${file.name.replace(/\.[^/.]+$/, '').replace(/[_|-]/g, ' ')}" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs">
+            </div>
+        </div>
+    `;
+
+    footer.classList.remove('hidden');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function confirmarInsercaoMidia() {
+    const file = mediaLibraryState.selectedFile;
+    if (!file) return;
+
+    const alt = document.getElementById('ml-selected-alt')?.value || file.name;
+    const targetEditorId = mediaLibraryState.target === 'aula' ? 'aula_editor_visual' : 'modulo_editor_visual';
+    const editor = document.getElementById(targetEditorId);
+    if (!editor) return;
+
+    let htmlToInsert = '';
+
+    if (file.type === 'image') {
+        htmlToInsert = `<figure class="my-4"><img src="${file.url}" alt="${alt}" class="rounded-2xl max-w-full shadow-md mx-auto" /><figcaption class="text-center text-xs text-slate-400 mt-1 italic">${alt}</figcaption></figure><p></p>`;
+    } else if (file.type === 'video') {
+        htmlToInsert = `<div class="my-6 aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-200"><video src="${file.url}" controls class="w-full h-full object-cover"></video></div><p></p>`;
+    } else if (file.type === 'audio') {
+        htmlToInsert = `
+            <div class="my-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col gap-2">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <span>🎧</span><span>${alt}</span>
+                </div>
+                <audio src="${file.url}" controls class="w-full"></audio>
+            </div><p></p>
+        `;
+    } else {
+        htmlToInsert = `
+            <div class="my-4 p-3.5 bg-blue-50/60 border border-blue-200 rounded-2xl flex items-center justify-between gap-3 not-prose">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="text-2xl">📄</span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold text-slate-900 truncate">${file.name}</p>
+                        <p class="text-[10px] text-slate-500">${formatBytes(file.size)}</p>
+                    </div>
+                </div>
+                <a href="${file.url}" target="_blank" download class="px-3.5 py-2 bg-[#0D5BA8] hover:bg-[#0A4B8A] text-white text-xs font-bold rounded-xl transition-all shrink-0">
+                    Baixar Arquivo
+                </a>
+            </div><p></p>
+        `;
+    }
+
+    editor.focus();
+    document.execCommand('insertHTML', false, htmlToInsert);
+    fecharModal('modal-media-library');
+}
+
+function handleMediaLibraryUpload(file) {
+    if (!file) return;
+
+    const progressBox = document.getElementById('ml-upload-progress');
+    const progressBar = document.getElementById('ml-upload-bar');
+    const progressPercent = document.getElementById('ml-upload-percent');
+
+    if (progressBox) progressBox.classList.remove('hidden');
+
+    const formData = new FormData();
+    formData.append('csrf_token', '<?php echo get_csrf_token(); ?>');
+    formData.append('action', 'upload_media_library');
+    formData.append('media_file', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'dashboard.php', true);
+
+    xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            if (progressBar) progressBar.style.width = percent + '%';
+            if (progressPercent) progressPercent.innerText = percent + '%';
+        }
+    };
+
+    xhr.onload = () => {
+        if (progressBox) progressBox.classList.add('hidden');
+        if (xhr.status === 200) {
+            try {
+                const res = JSON.parse(xhr.responseText);
+                if (res.success) {
+                    // Adiciona o novo arquivo no topo da biblioteca
+                    mediaLibraryState.files.unshift(res);
+                    switchMediaLibraryTab('browse');
+                    selectMediaFile(res);
+                } else {
+                    alert('Erro no upload: ' + (res.message || 'Falha ao salvar.'));
+                }
+            } catch (e) {
+                alert('Erro ao processar resposta do servidor.');
+            }
+        }
+    };
+
+    xhr.onerror = () => {
+        if (progressBox) progressBox.classList.add('hidden');
+        alert('Erro de conexão ao enviar arquivo.');
+    };
+
+    xhr.send(formData);
+}
+
+function inserirMidiaPorUrlDireta() {
+    const type = document.getElementById('ml-url-type')?.value || 'image';
+    const url = document.getElementById('ml-url-input')?.value.trim();
+    const alt = document.getElementById('ml-url-alt')?.value.trim() || 'Mídia externa';
+
+    if (!url) {
+        alert('Por favor, digite o endereço da URL.');
+        return;
+    }
+
+    const targetEditorId = mediaLibraryState.target === 'aula' ? 'aula_editor_visual' : 'modulo_editor_visual';
+    const editor = document.getElementById(targetEditorId);
+    if (!editor) return;
+
+    let htmlToInsert = '';
+
+    if (type === 'image') {
+        htmlToInsert = `<figure class="my-4"><img src="${url}" alt="${alt}" class="rounded-2xl max-w-full shadow-md mx-auto" /><figcaption class="text-center text-xs text-slate-400 mt-1 italic">${alt}</figcaption></figure><p></p>`;
+    } else if (type === 'youtube') {
         let embedUrl = url;
         const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
         if (match) {
             embedUrl = 'https://www.youtube.com/embed/' + match[1];
         }
-        const videoHtml = `<div class="my-6 aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-200"><iframe src="${embedUrl}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p></p>`;
-        document.getElementById('modulo_editor_visual').focus();
-        document.execCommand('insertHTML', false, videoHtml);
+        htmlToInsert = `<div class="my-6 aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-200"><iframe src="${embedUrl}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p></p>`;
+    } else if (type === 'audio') {
+        htmlToInsert = `
+            <div class="my-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col gap-2">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <span>🎧</span><span>${alt}</span>
+                </div>
+                <audio src="${url}" controls class="w-full"></audio>
+            </div><p></p>
+        `;
+    } else {
+        htmlToInsert = `<p><a href="${url}" target="_blank" class="text-blue-600 font-bold underline">🔗 ${alt}</a></p>`;
     }
+
+    editor.focus();
+    document.execCommand('insertHTML', false, htmlToInsert);
+    fecharModal('modal-media-library');
 }
 
 function inserirTabelaModulo() {
@@ -3192,30 +3707,6 @@ function inserirTabelaModulo() {
     document.execCommand('insertHTML', false, tabelaHtml);
 }
 
-function inserirImagemAula() {
-    const url = prompt('Digite a URL da imagem ou link local (/public/...):', 'https://');
-    if (url) {
-        const alt = prompt('Descrição/Legenda da imagem:', 'Imagem da aula');
-        const imgHtml = `<figure class="my-4"><img src="${url}" alt="${alt}" class="rounded-2xl max-w-full shadow-md mx-auto" /><figcaption class="text-center text-xs text-slate-400 mt-1 italic">${alt || ''}</figcaption></figure><p></p>`;
-        document.getElementById('aula_editor_visual').focus();
-        document.execCommand('insertHTML', false, imgHtml);
-    }
-}
-
-function inserirVideoEmbedAula() {
-    const url = prompt('Digite o link do vídeo do YouTube para incorporar no meio da aula:', 'https://www.youtube.com/watch?v=');
-    if (url) {
-        let embedUrl = url;
-        const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-        if (match) {
-            embedUrl = 'https://www.youtube.com/embed/' + match[1];
-        }
-        const videoHtml = `<div class="my-6 aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-200"><iframe src="${embedUrl}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p></p>`;
-        document.getElementById('aula_editor_visual').focus();
-        document.execCommand('insertHTML', false, videoHtml);
-    }
-}
-
 function inserirTabelaAula() {
     const tabelaHtml = `
         <table class="w-full my-4 border border-slate-300 rounded-xl overflow-hidden text-xs">
@@ -3231,6 +3722,7 @@ function inserirTabelaAula() {
     document.getElementById('aula_editor_visual').focus();
     document.execCommand('insertHTML', false, tabelaHtml);
 }
+
 
 let isAulaHtmlMode = false;
 function toggleAulaEditorMode(mode) {
